@@ -32,7 +32,10 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/signup") ||
     request.nextUrl.pathname.startsWith("/forgot-password") ||
     request.nextUrl.pathname.startsWith("/reset-password");
-  const isPublic = request.nextUrl.pathname === "/" || isAuthPage;
+  const isPublic =
+    request.nextUrl.pathname === "/" ||
+    request.nextUrl.pathname.startsWith("/auth/callback") ||
+    isAuthPage;
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();

@@ -23,21 +23,21 @@ export function AdminNav({ role }: Props) {
   const pathname = usePathname();
 
   return (
-    <nav className="bg-card border-b border-border px-4">
-      <div className="max-w-6xl mx-auto flex gap-1 py-1 overflow-x-auto">
+    <nav className="border-b border-border bg-card/60 backdrop-blur-xl px-4">
+      <div className="max-w-6xl mx-auto flex gap-1 py-2 overflow-x-auto scrollbar-none">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || (href !== "/admin/dashboard" && pathname.startsWith(href));
           return (
             <Link
               key={href}
               href={href}
-              className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
                 active
-                  ? "bg-primary/10 text-primary"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  ? "bg-[var(--indigo-dim)] text-[var(--indigo-soft)] border border-[rgba(99,102,241,0.22)]"
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent"
               }`}
             >
-              <Icon className="h-4 w-4 shrink-0" />
+              <Icon className="h-3.5 w-3.5 shrink-0" />
               {label}
             </Link>
           );
@@ -45,13 +45,13 @@ export function AdminNav({ role }: Props) {
         {role === "controller" && (
           <Link
             href="/admin/users"
-            className={`flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors ${
+            className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all ${
               pathname === "/admin/users"
-                ? "bg-primary/10 text-primary"
-                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                ? "bg-[var(--indigo-dim)] text-[var(--indigo-soft)] border border-[rgba(99,102,241,0.22)]"
+                : "text-muted-foreground hover:text-foreground hover:bg-accent"
             }`}
           >
-            <Users className="h-4 w-4 shrink-0" />
+            <Users className="h-3.5 w-3.5 shrink-0" />
             Users
           </Link>
         )}

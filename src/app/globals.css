@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,52 +7,107 @@
 /* Leaflet map styles */
 @import "leaflet/dist/leaflet.css";
 
+/* ── LIGHT MODE ─────────────────────────────────────── */
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
-  --card: #ffffff;
-  --card-foreground: #0f172a;
-  --primary: #2563eb;
-  --primary-foreground: #ffffff;
-  --secondary: #f1f5f9;
-  --secondary-foreground: #0f172a;
-  --muted: #f1f5f9;
-  --muted-foreground: #475569;
-  --accent: #e2e8f0;
-  --accent-foreground: #0f172a;
-  --destructive: #dc2626;
+  --background:           #f4f4f8;
+  --foreground:           #0f0f1a;
+  --card:                 #ffffff;
+  --card-foreground:      #0f0f1a;
+  --primary:              #6366f1;
+  --primary-foreground:   #ffffff;
+  --secondary:            #ededf5;
+  --secondary-foreground: #0f0f1a;
+  --muted:                #ededf5;
+  --muted-foreground:     #64748b;
+  --accent:               #ede9fe;
+  --accent-foreground:    #4c1d95;
+  --destructive:          #f43f5e;
   --destructive-foreground: #ffffff;
-  --border: #e2e8f0;
-  --input: #e2e8f0;
-  --ring: #2563eb;
+  --border:               #e2e2ee;
+  --input:                #e2e2ee;
+  --ring:                 #6366f1;
+
+  /* Extended brand palette */
+  --indigo:               #6366f1;
+  --indigo-soft:          #818cf8;
+  --indigo-dim:           rgba(99,102,241,0.10);
+  --indigo-glow:          rgba(99,102,241,0.18);
+  --violet:               #7c3aed;
+  --gold:                 #f59e0b;
+  --gold-dim:             rgba(245,158,11,0.10);
+  --emerald:              #10b981;
+  --emerald-dim:          rgba(16,185,129,0.10);
+  --rose:                 #f43f5e;
+  --rose-dim:             rgba(244,63,94,0.10);
+  --amber:                #f97316;
+  --amber-dim:            rgba(249,115,22,0.10);
+  --surface:              #ffffff;
+  --surface2:             #f4f4f8;
+  --surface3:             #ededf5;
+  --border-hi:            rgba(0,0,0,0.10);
 }
 
+/* ── DARK MODE ──────────────────────────────────────── */
 .dark {
-  --background: #0f172a;
-  --foreground: #f8fafc;
-  --card: #1e293b;
-  --card-foreground: #f8fafc;
-  --primary: #3b82f6;
-  --primary-foreground: #ffffff;
-  --secondary: #334155;
-  --secondary-foreground: #f8fafc;
-  --muted: #334155;
-  --muted-foreground: #94a3b8;
-  --accent: #334155;
-  --accent-foreground: #f8fafc;
-  --border: #334155;
-  --input: #334155;
-  --ring: #3b82f6;
+  --background:           #080810;
+  --foreground:           #f1f5f9;
+  --card:                 #10101c;
+  --card-foreground:      #f1f5f9;
+  --primary:              #6366f1;
+  --primary-foreground:   #ffffff;
+  --secondary:            #16162a;
+  --secondary-foreground: #f1f5f9;
+  --muted:                #16162a;
+  --muted-foreground:     #94a3b8;
+  --accent:               #1c1c32;
+  --accent-foreground:    #f1f5f9;
+  --destructive:          #f43f5e;
+  --destructive-foreground: #ffffff;
+  --border:               rgba(255,255,255,0.07);
+  --input:                #16162a;
+  --ring:                 #6366f1;
+
+  /* Extended brand palette — same hues, adjusted glows for dark */
+  --indigo:               #6366f1;
+  --indigo-soft:          #818cf8;
+  --indigo-dim:           rgba(99,102,241,0.14);
+  --indigo-glow:          rgba(99,102,241,0.22);
+  --violet:               #7c3aed;
+  --gold:                 #f59e0b;
+  --gold-dim:             rgba(245,158,11,0.12);
+  --emerald:              #10b981;
+  --emerald-dim:          rgba(16,185,129,0.12);
+  --rose:                 #f43f5e;
+  --rose-dim:             rgba(244,63,94,0.12);
+  --amber:                #f97316;
+  --amber-dim:            rgba(249,115,22,0.12);
+  --surface:              #10101c;
+  --surface2:             #16162a;
+  --surface3:             #1c1c32;
+  --border-hi:            rgba(255,255,255,0.12);
 }
 
+/* ── BASE ───────────────────────────────────────────── */
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: 'DM Sans', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ── ANIMATIONS ─────────────────────────────────────── */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
-  }
+  .text-balance { text-wrap: balance; }
+  .font-syne    { font-family: 'Syne', sans-serif; }
+
+  .animate-fade-up { animation: fadeUp 0.35s ease both; }
+  .delay-1 { animation-delay: 0.05s; }
+  .delay-2 { animation-delay: 0.10s; }
+  .delay-3 { animation-delay: 0.15s; }
+  .delay-4 { animation-delay: 0.20s; }
+  .delay-5 { animation-delay: 0.25s; }
 }

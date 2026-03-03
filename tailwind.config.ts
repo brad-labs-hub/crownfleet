@@ -9,6 +9,10 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["DM Sans", "system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+        syne: ["Syne", "sans-serif"],
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
@@ -39,6 +43,16 @@ const config: Config = {
           DEFAULT: "var(--card)",
           foreground: "var(--card-foreground)",
         },
+        surface: {
+          DEFAULT: "var(--surface)",
+          2: "var(--surface2)",
+          3: "var(--surface3)",
+        },
+      },
+      boxShadow: {
+        indigo: "0 0 24px rgba(99,102,241,0.25)",
+        "indigo-sm": "0 0 14px rgba(99,102,241,0.18)",
+        "indigo-lg": "0 0 48px rgba(99,102,241,0.3)",
       },
     },
   },

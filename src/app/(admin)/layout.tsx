@@ -36,20 +36,23 @@ export default async function AdminLayout({
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 dark:bg-background">
-      <header className="sticky top-0 z-10 bg-card border-b border-border px-4 py-2.5">
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-10 border-b border-border px-4 py-2.5 bg-card/80 backdrop-blur-xl">
         <div className="flex items-center justify-between max-w-6xl mx-auto">
           <div className="flex items-center gap-3">
-            <Link href="/admin/dashboard" className="flex items-center gap-2 font-bold text-foreground">
-              <div className="h-7 w-7 rounded-md bg-primary flex items-center justify-center">
-                <span className="text-primary-foreground text-xs font-bold">FM</span>
+            <Link href="/admin/dashboard" className="flex items-center gap-2.5">
+              <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-indigo-sm shrink-0">
+                <span className="text-white text-xs font-bold font-syne tracking-wide">FM</span>
               </div>
-              <span className="hidden sm:inline">Fleet Manager</span>
+              <div className="hidden sm:block">
+                <div className="text-sm font-bold font-syne text-foreground leading-none">Fleet Manager</div>
+                <div className="text-[10px] text-muted-foreground mt-0.5 font-medium tracking-wide uppercase">Admin</div>
+              </div>
             </Link>
-            <span className="text-border">|</span>
+            <div className="h-5 w-px bg-border mx-1" />
             <Link
               href="/driver/dashboard"
-              className="text-xs text-muted-foreground hover:text-foreground border border-border rounded px-2 py-1 transition-colors"
+              className="text-xs text-muted-foreground hover:text-foreground border border-border rounded-lg px-2.5 py-1 transition-colors hover:border-primary/30"
             >
               Driver View
             </Link>
@@ -59,7 +62,7 @@ export default async function AdminLayout({
             <form action={signOut}>
               <button
                 type="submit"
-                className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md transition-colors"
+                className="p-2 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg transition-colors"
                 aria-label="Sign out"
               >
                 <LogOut className="h-4 w-4" />

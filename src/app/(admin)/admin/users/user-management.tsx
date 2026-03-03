@@ -16,7 +16,7 @@ const ROLE_DESCRIPTIONS: Record<string, string> = {
   controller: "Full access including user management and all settings",
 };
 
-export function InviteForm() {
+export function InviteForm({ hasServiceKey }: { hasServiceKey: boolean }) {
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
@@ -62,8 +62,10 @@ export function InviteForm() {
 
       {!open ? (
         <button
-          onClick={() => { setOpen(true); setSuccess(null); }}
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-all"
+          onClick={() => { if (hasServiceKey) { setOpen(true); setSuccess(null); } }}
+          disabled={!hasServiceKey}
+          title={!hasServiceKey ? "Add SUPABASE_SERVICE_ROLE_KEY to Vercel environment variables first" : undefined}
+          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-white transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           style={{ background: "linear-gradient(135deg, var(--indigo) 0%, var(--violet) 100%)" }}
         >
           <UserPlus className="h-4 w-4" />

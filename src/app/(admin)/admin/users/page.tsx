@@ -1,10 +1,9 @@
 import { createClient } from "@/lib/supabase/server";
 import { InviteForm, UserList } from "./user-management";
-import { Users } from "lucide-react";
+import { Users, AlertTriangle } from "lucide-react";
 
 export default async function AdminUsersPage() {
   const supabase = await createClient();
-
   const { data: { user: currentUser } } = await supabase.auth.getUser();
 
   const { data: users } = await supabase
@@ -20,6 +19,8 @@ export default async function AdminUsersPage() {
     driver: userList.filter((u) => u.role === "driver").length,
   };
 
+  const hasServiceKey = !!process.env.SUPABASE_SERVICE_ROLE_KEY;
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -30,8 +31,28 @@ export default async function AdminUsersPage() {
             Invite users and manage their access roles
           </p>
         </div>
-        <InviteForm />
+        <InviteForm hasServiceKey={hasServiceKey} />
       </div>
+
+      {/* Missing service key banner */}
+      {!hasServiceKey && (
+        <div className="rounded-2xl border p-4 flex items-start gap-3"
+          style={{ background: "var(--amber-dim)", borderColor: "rgba(249,115,22,0.3)" }}>
+          <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" style={{ color: "var(--amber)" }} />
+          <div>
+            <p className="text-sm font-semibold text-foreground">Invite feature needs setup</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Add <code className="bg-accent px-1.5 py-0.5 rounded font-mono text-foreground">SUPABASE_SERVICE_ROLE_KEY</code> to your
+              Vercel environment variables, then redeploy. Find it in{" "}
+              <a href="https://supabase.com/dashboard/project/_/settings/api" target="_blank" rel="noopener noreferrer"
+                className="underline underline-offset-2" style={{ color: "var(--amber)" }}>
+                Supabase → Settings → API
+              </a>{" "}
+              under <strong>service_role</strong>.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
@@ -39,7 +60,7 @@ export default async function AdminUsersPage() {
           { label: "Controllers", count: counts.controller, color: "var(--indigo-soft)", bg: "var(--indigo-dim)" },
           { label: "Employees", count: counts.employee, color: "var(--gold)", bg: "var(--gold-dim)" },
           { label: "Drivers", count: counts.driver, color: "var(--muted-foreground)", bg: "var(--surface2)" },
-        ].map(({ label, count, color, bg }) => (
+        ].map(({ label, count, color }) => (
           <div key={label} className="rounded-2xl border border-border bg-card p-4 text-center">
             <p className="text-2xl font-bold font-syne" style={{ color }}>{count}</p>
             <p className="text-xs text-muted-foreground mt-1">{label}</p>
@@ -47,25 +68,29 @@ export default async function AdminUsersPage() {
         ))}
       </div>
 
-      {/* Microsoft SSO notice */}
-      <div className="rounded-2xl border border-[rgba(99,102,241,0.25)] p-4 flex items-start gap-3" style={{ background: "var(--indigo-dim)" }}>
+      {/* Microsoft SSO + MFA notice */}
+      <div className="rounded-2xl border border-[rgba(99,102,241,0.25)] p-4 flex items-start gap-3"
+        style={{ background: "var(--indigo-dim)" }}>
         <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "var(--indigo-dim)" }}>
           <Users className="h-4 w-4" style={{ color: "var(--indigo-soft)" }} />
         </div>
-        <div>
-          <p className="text-sm font-semibold text-foreground">Microsoft SSO is enabled</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Users you invite can log in with their Microsoft identity. Their Microsoft email must match the invited email address.
-            To enable SSO, configure the Azure provider in your{" "}
-            <a
-              href="https://supabase.com/dashboard/project/_/auth/providers"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline underline-offset-2"
-              style={{ color: "var(--indigo-soft)" }}
-            >
-              Supabase Auth settings
+        <div className="space-y-1.5">
+          <p className="text-sm font-semibold text-foreground">Microsoft SSO + mandatory email MFA</p>
+          <p className="text-xs text-muted-foreground">
+            All users are required to verify via email MFA on every login. Microsoft SSO is also available — users log in with their Microsoft account and must still complete the email OTP step.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            To enable Microsoft SSO, configure the Azure provider in{" "}
+            <a href="https://supabase.com/dashboard/project/_/auth/providers" target="_blank" rel="noopener noreferrer"
+              className="underline underline-offset-2" style={{ color: "var(--indigo-soft)" }}>
+              Supabase Auth → Providers
             </a>.
+            To enable email MFA, go to{" "}
+            <a href="https://supabase.com/dashboard/project/_/auth/mfa" target="_blank" rel="noopener noreferrer"
+              className="underline underline-offset-2" style={{ color: "var(--indigo-soft)" }}>
+              Supabase Auth → MFA
+            </a>{" "}
+            and enable the <strong>Email OTP</strong> factor.
           </p>
         </div>
       </div>

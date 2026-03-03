@@ -30,8 +30,11 @@ export async function POST(request: Request) {
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
-  // Invite via Supabase — sends the invite email automatically
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  // Derive app URL from env var, falling back to the incoming request's origin
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_URL ??
+    (() => { const u = new URL(request.url); return `${u.protocol}//${u.host}`; })();
+
   const { data: inviteData, error: inviteError } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { name, role },
     redirectTo: `${appUrl}/auth/callback?type=invite`,

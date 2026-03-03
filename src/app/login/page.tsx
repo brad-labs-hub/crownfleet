@@ -5,17 +5,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
-const MicrosoftIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 21 21" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="1" y="1" width="9" height="9" fill="#F25022" />
-    <rect x="11" y="1" width="9" height="9" fill="#7FBA00" />
-    <rect x="1" y="11" width="9" height="9" fill="#00A4EF" />
-    <rect x="11" y="11" width="9" height="9" fill="#FFB900" />
-  </svg>
-);
-
 const ERROR_MESSAGES: Record<string, string> = {
-  no_access: "Your Microsoft account hasn't been invited yet. Contact your admin to request access.",
+  no_access: "Your account hasn't been set up yet. Contact your admin to request access.",
   auth_failed: "Authentication failed. Please try again.",
 };
 
@@ -25,7 +16,6 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const [resetSuccess, setResetSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [msLoading, setMsLoading] = useState(false);
   const searchParams = useSearchParams();
   const router = useRouter();
   const supabase = createClient();
@@ -55,23 +45,6 @@ function LoginForm() {
     }
   }
 
-  async function handleMicrosoftLogin() {
-    setError(null);
-    setMsLoading(true);
-    const origin = window.location.origin;
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "azure",
-      options: {
-        scopes: "email profile openid",
-        redirectTo: `${origin}/auth/callback`,
-      },
-    });
-    if (error) {
-      setError(error.message);
-      setMsLoading(false);
-    }
-  }
-
   return (
     <main className="min-h-screen flex flex-col items-center justify-center p-8 bg-background">
       <div className="w-full max-w-sm space-y-6">
@@ -96,24 +69,6 @@ function LoginForm() {
             {error}
           </div>
         )}
-
-        {/* Microsoft SSO */}
-        <button
-          type="button"
-          onClick={handleMicrosoftLogin}
-          disabled={msLoading || loading}
-          className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-border bg-card hover:bg-accent text-sm font-medium text-foreground transition-all disabled:opacity-50"
-        >
-          <MicrosoftIcon />
-          {msLoading ? "Redirecting…" : "Continue with Microsoft"}
-        </button>
-
-        {/* Divider */}
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-xs text-muted-foreground">or sign in with email</span>
-          <div className="flex-1 h-px bg-border" />
-        </div>
 
         {/* Email/password form */}
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -160,7 +115,6 @@ function LoginForm() {
         </form>
 
         <p className="text-center text-xs text-muted-foreground">
-          Access is by invitation only.{" "}
           <Link href="/forgot-password" className="hover:text-foreground underline underline-offset-2">
             Forgot your password?
           </Link>

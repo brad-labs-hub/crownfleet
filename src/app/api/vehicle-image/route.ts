@@ -44,7 +44,7 @@ export async function GET(request: Request) {
 
   const apiKey = process.env.CARSXE_API_KEY;
   if (!apiKey) {
-    return NextResponse.json({ url: null, error: "CARSXE_API_KEY not configured" }, { status: 500 });
+    return NextResponse.json({ url: null });
   }
 
   const colorToken = normalizeColor(color);

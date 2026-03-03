@@ -6,6 +6,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "logo.clearbit.com",
       },
+      {
+        protocol: "https",
+        hostname: "cdn.imagin.studio",
+      },
       // CarsXE serves images from their CDN — allow all subdomains
       {
         protocol: "https",

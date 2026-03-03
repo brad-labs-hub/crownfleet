@@ -27,6 +27,7 @@ export default function NewVehiclePage() {
   const [notes, setNotes] = useState("");
   const [locationId, setLocationId] = useState("");
   const [status, setStatus] = useState("active");
+  const [previewFile, setPreviewFile] = useState<File | null>(null);
   const [locations, setLocations] = useState<{ id: string; name: string; code: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +47,7 @@ export default function NewVehiclePage() {
     setError(null);
     setLoading(true);
     try {
-      const { error } = await supabase.from("vehicles").insert({
+      const { data: inserted, error: insertError } = await supabase.from("vehicles").insert({
         make,
         model,
         year: parseInt(year),
@@ -56,8 +57,21 @@ export default function NewVehiclePage() {
         notes: notes || null,
         location_id: locationId || null,
         status,
-      });
-      if (error) throw error;
+      }).select("id").single();
+      if (insertError) throw insertError;
+      const vehicleId = inserted.id;
+
+      if (previewFile && vehicleId) {
+        const ext = previewFile.name.split(".").pop()?.toLowerCase() || "jpg";
+        const path = `${vehicleId}/preview.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from("vehicle-previews")
+          .upload(path, previewFile, { upsert: true });
+        if (!uploadError) {
+          await supabase.from("vehicles").update({ preview_image_path: path }).eq("id", vehicleId);
+        }
+      }
+
       router.push("/admin/vehicles");
       router.refresh();
     } catch (err: unknown) {
@@ -138,6 +152,17 @@ export default function NewVehiclePage() {
             <div>
               <Label htmlFor="color">Color</Label>
               <Input id="color" value={color} onChange={(e) => setColor(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="preview">Preview photo</Label>
+              <Input
+                id="preview"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={(e) => setPreviewFile(e.target.files?.[0] ?? null)}
+                className="mt-1"
+              />
+              {previewFile && <p className="text-xs text-muted-foreground mt-1">{previewFile.name}</p>}
             </div>
             <div>
               <Label htmlFor="notes">Notes</Label>

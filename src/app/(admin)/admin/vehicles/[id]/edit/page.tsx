@@ -34,7 +34,9 @@ export default function EditVehiclePage() {
   const [locations, setLocations] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [uploadingPreview, setUploadingPreview] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [previewImagePath, setPreviewImagePath] = useState<string | null>(null);
   const router = useRouter();
 
   const load = useCallback(async () => {
@@ -54,6 +56,7 @@ export default function EditVehiclePage() {
       setNotes(v.notes ?? "");
       setLocationId(v.location_id ?? "");
       setStatus(v.status ?? "active");
+      setPreviewImagePath(v.preview_image_path ?? null);
     }
   }, [id]);
 
@@ -102,6 +105,33 @@ export default function EditVehiclePage() {
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to delete");
       setDeleting(false);
+    }
+  }
+
+  async function handlePreviewUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file || !id) return;
+    setUploadingPreview(true);
+    setError(null);
+    try {
+      const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `${id}/preview.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("vehicle-previews")
+        .upload(path, file, { upsert: true });
+      if (uploadError) throw uploadError;
+      const { error: updateError } = await supabase
+        .from("vehicles")
+        .update({ preview_image_path: path, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (updateError) throw updateError;
+      setPreviewImagePath(path);
+      e.target.value = "";
+      router.refresh();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploadingPreview(false);
     }
   }
 
@@ -183,6 +213,27 @@ export default function EditVehiclePage() {
             <div>
               <Label htmlFor="notes">Notes</Label>
               <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={3} />
+            </div>
+            <div>
+              <Label>Preview photo</Label>
+              {previewImagePath && (
+                <div className="mt-2 flex items-center gap-3">
+                  <img
+                    src={supabase.storage.from("vehicle-previews").getPublicUrl(previewImagePath).data.publicUrl}
+                    alt="Preview"
+                    className="w-24 h-16 rounded object-cover border border-border"
+                  />
+                  <span className="text-xs text-muted-foreground">Current preview</span>
+                </div>
+              )}
+              <Input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                onChange={handlePreviewUpload}
+                disabled={uploadingPreview}
+                className="mt-2"
+              />
+              {uploadingPreview && <p className="text-xs text-muted-foreground mt-1">Uploading…</p>}
             </div>
             {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-2 flex-wrap">

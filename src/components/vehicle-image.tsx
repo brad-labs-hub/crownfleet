@@ -8,6 +8,8 @@ type Props = {
   year: number;
   color?: string | null;
   vin?: string | null;
+  /** When set, this URL is shown first (e.g. uploaded preview photo). No API fetch. */
+  imageUrl?: string | null;
   className?: string;
 };
 
@@ -89,14 +91,19 @@ function colorToCss(raw: string | null | undefined): string {
 // 0 = CarsXE photo, 1 = brand logo, 2 = color placeholder
 type ImageState = 0 | 1 | 2;
 
-export function VehicleImage({ make, model, year, color, className = "" }: Props) {
+export function VehicleImage({ make, model, year, color, imageUrl, className = "" }: Props) {
   const [state, setState] = useState<ImageState>(0);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   const makeKey     = make.toLowerCase().trim();
   const brandLogoUrl = BRAND_LOGOS[makeKey];
 
+  // Imagin Studio fallback when CarsXE returns nothing (no key or no match)
+  const imaginUrl = `https://cdn.imagin.studio/getimage?customer=img&make=${encodeURIComponent(make)}&modelFamily=${encodeURIComponent(model)}&modelYear=${year}&angle=23&zoomType=fullscreen`;
+
+  // When imageUrl is provided (uploaded preview), use it and skip API fetch
   useEffect(() => {
+    if (imageUrl) return; // skip when we have uploaded image
     let cancelled = false;
 
     async function fetchPhoto() {
@@ -109,17 +116,18 @@ export function VehicleImage({ make, model, year, color, className = "" }: Props
         if (!cancelled && json.url) {
           setPhotoUrl(json.url);
         } else if (!cancelled) {
-          setState(brandLogoUrl ? 1 : 2);
+          // CarsXE returned nothing — use Imagin Studio (watermarked but shows a car)
+          setPhotoUrl(imaginUrl);
         }
       } catch {
-        if (!cancelled) setState(brandLogoUrl ? 1 : 2);
+        if (!cancelled) setPhotoUrl(imaginUrl);
       }
     }
 
     fetchPhoto();
     return () => { cancelled = true; };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [make, model, year, color]);
+  }, [make, model, year, color, imageUrl]);
 
   // Fallback 2 — color-tinted placeholder with brand initials
   if (state === 2) {
@@ -159,7 +167,20 @@ export function VehicleImage({ make, model, year, color, className = "" }: Props
     );
   }
 
-  // Primary — CarsXE photo (or loading state while fetching)
+  // Uploaded preview photo (takes precedence over API)
+  if (imageUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={imageUrl}
+        alt={`${year} ${make} ${model}`}
+        onError={() => setState(brandLogoUrl ? 1 : 2)}
+        className={`object-cover rounded ${className}`}
+      />
+    );
+  }
+
+  // Primary — CarsXE / Imagin photo
   if (photoUrl) {
     return (
       // eslint-disable-next-line @next/next/no-img-element

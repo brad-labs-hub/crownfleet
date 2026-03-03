@@ -7,18 +7,21 @@ export default async function VehiclesListPage() {
   const supabase = await createClient();
   const { data: vehicles } = await supabase
     .from("vehicles")
-    .select("id, make, model, year, vin, color, license_plate, location:locations(name, code)")
+    .select("id, make, model, year, vin, color, license_plate, preview_image_path, location:locations(name, code)")
     .order("make");
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-foreground">Vehicles</h1>
       <div className="space-y-3">
-        {vehicles?.map((v) => (
+        {vehicles?.map((v) => {
+          const previewUrl = v.preview_image_path
+            ? supabase.storage.from("vehicle-previews").getPublicUrl(v.preview_image_path).data.publicUrl
+            : null;
+          return (
           <Link key={v.id} href={`/driver/vehicles/${v.id}`}>
             <Card className="hover:bg-accent/50 transition cursor-pointer">
               <CardContent className="p-3 flex items-center gap-4">
-                {/* Vehicle image thumbnail */}
                 <div className="shrink-0 w-24 h-16 rounded overflow-hidden bg-muted">
                   <VehicleImage
                     make={v.make}
@@ -26,6 +29,7 @@ export default async function VehiclesListPage() {
                     year={v.year}
                     color={v.color}
                     vin={v.vin}
+                    imageUrl={previewUrl}
                     className="w-full h-full"
                   />
                 </div>
@@ -52,7 +56,8 @@ export default async function VehiclesListPage() {
               </CardContent>
             </Card>
           </Link>
-        ))}
+          );
+        })}
         {(!vehicles || vehicles.length === 0) && (
           <p className="text-muted-foreground text-center py-8">No vehicles in fleet</p>
         )}

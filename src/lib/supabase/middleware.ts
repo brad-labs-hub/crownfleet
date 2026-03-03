@@ -58,16 +58,15 @@ export async function updateSession(request: NextRequest) {
 
     if (aal && aal.currentLevel !== "aal2") {
       const url = request.nextUrl.clone();
-      const next = encodeURIComponent(pathname);
-
+      // Pass pathname raw — searchParams.set() handles encoding automatically
       if (aal.nextLevel === "aal2") {
         // User has enrolled factors but hasn't verified this session
         url.pathname = "/mfa/verify";
-        url.searchParams.set("next", next);
+        url.searchParams.set("next", pathname);
       } else {
         // User hasn't enrolled any MFA factor yet → force setup
         url.pathname = "/mfa/setup";
-        url.searchParams.set("next", next);
+        url.searchParams.set("next", pathname);
       }
       return NextResponse.redirect(url);
     }

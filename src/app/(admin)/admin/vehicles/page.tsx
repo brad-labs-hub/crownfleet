@@ -28,11 +28,16 @@ export default async function AdminVehiclesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-foreground">Vehicles</h1>
-        <Link href="/admin/vehicles/new">
-          <Button>Add Vehicle</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href="/admin/vehicles/import-documents">
+            <Button variant="outline">Bulk import documents</Button>
+          </Link>
+          <Link href="/admin/vehicles/new">
+            <Button>Add Vehicle</Button>
+          </Link>
+        </div>
       </div>
 
       <VehicleGrid

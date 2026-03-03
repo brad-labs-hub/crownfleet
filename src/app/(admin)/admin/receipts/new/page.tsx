@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RECEIPT_CATEGORIES, type ReceiptCategory } from "@/types/database";
+import { Upload, FileText, X } from "lucide-react";
 
 export default function NewReceiptPage() {
   const [category, setCategory] = useState<ReceiptCategory>("gas");
@@ -23,6 +24,7 @@ export default function NewReceiptPage() {
   const [locations, setLocations] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const supabase = createClient();
 
@@ -87,7 +89,84 @@ export default function NewReceiptPage() {
           <h2 className="font-semibold text-foreground">Receipt Details</h2>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Image upload first — prominent button */}
+            <div className="space-y-2">
+              <Label className="text-foreground">Receipt image or document</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                className="hidden"
+              />
+              {!file ? (
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full flex flex-col items-center justify-center gap-2 py-10 px-4 rounded-xl border-2 border-dashed border-primary/50 bg-primary/5 hover:bg-primary/10 hover:border-primary transition-colors text-foreground"
+                >
+                  <Upload className="w-10 h-10 text-primary" />
+                  <span className="font-medium">Click to upload receipt</span>
+                  <span className="text-sm text-muted-foreground">PDF, JPG or PNG</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-muted/30">
+                  <FileText className="w-8 h-8 text-primary shrink-0" />
+                  <span className="flex-1 truncate text-sm text-foreground font-medium">{file.name}</span>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setFile(null)}
+                    className="shrink-0"
+                    aria-label="Remove file"
+                  >
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            {/* Tag to vehicle or location */}
+            <div className="space-y-2">
+              <Label className="text-foreground">Tag to vehicle or location</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="vehicle" className="text-muted-foreground text-xs">Vehicle (optional)</Label>
+                  <select
+                    id="vehicle"
+                    value={vehicleId}
+                    onChange={(e) => setVehicleId(e.target.value)}
+                    className="w-full mt-1 px-4 py-2 border border-input rounded-md bg-background text-foreground"
+                  >
+                    <option value="">— None —</option>
+                    {vehicles.map((v) => (
+                      <option key={v.id} value={v.id}>
+                        {v.year} {v.make} {v.model}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label htmlFor="location" className="text-muted-foreground text-xs">Location (optional)</Label>
+                  <select
+                    id="location"
+                    value={locationId}
+                    onChange={(e) => setLocationId(e.target.value)}
+                    className="w-full mt-1 px-4 py-2 border border-input rounded-md bg-background text-foreground"
+                  >
+                    <option value="">— None —</option>
+                    {locations.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
             <div>
               <Label htmlFor="category">Category</Label>
               <select
@@ -134,50 +213,6 @@ export default function NewReceiptPage() {
                 value={vendor}
                 onChange={(e) => setVendor(e.target.value)}
                 placeholder="e.g. Shell, Mobil"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="vehicle">Vehicle (optional)</Label>
-                <select
-                  id="vehicle"
-                  value={vehicleId}
-                  onChange={(e) => setVehicleId(e.target.value)}
-                  className="w-full mt-1 px-4 py-2 border border-input rounded-md bg-background text-foreground"
-                >
-                  <option value="">— None —</option>
-                  {vehicles.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.year} {v.make} {v.model}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="location">Location (optional)</Label>
-                <select
-                  id="location"
-                  value={locationId}
-                  onChange={(e) => setLocationId(e.target.value)}
-                  className="w-full mt-1 px-4 py-2 border border-input rounded-md bg-background text-foreground"
-                >
-                  <option value="">— None —</option>
-                  {locations.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div>
-              <Label htmlFor="file">Document (optional)</Label>
-              <Input
-                id="file"
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                className="mt-1"
               />
             </div>
             <div>

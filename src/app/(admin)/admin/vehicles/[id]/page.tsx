@@ -100,11 +100,24 @@ export default async function AdminVehicleDetailPage({
         <CardContent>
           {(vehicle.insurance as unknown[])?.length ? (
             <ul className="space-y-2 text-sm">
-              {(vehicle.insurance as { id: string; provider: string; expiry_date: string }[]).map(
+              {(vehicle.insurance as { id: string; provider: string; expiry_date: string; document_url: string | null }[]).map(
                 (i) => (
-                  <li key={i.id} className="flex justify-between">
+                  <li key={i.id} className="flex justify-between items-center gap-2">
                     <span className="text-foreground">{i.provider}</span>
-                    <span className="text-muted-foreground">expires {formatDate(i.expiry_date)}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="text-muted-foreground">expires {formatDate(i.expiry_date)}</span>
+                      {i.document_url && (
+                        <a
+                          href={i.document_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline text-xs font-medium"
+                          aria-label="View insurance document"
+                        >
+                          View
+                        </a>
+                      )}
+                    </span>
                   </li>
                 )
               )}
@@ -122,11 +135,24 @@ export default async function AdminVehicleDetailPage({
         <CardContent>
           {(vehicle.registrations as unknown[])?.length ? (
             <ul className="space-y-2 text-sm">
-              {(vehicle.registrations as { id: string; state: string; expiry_date: string }[]).map(
+              {(vehicle.registrations as { id: string; state: string; expiry_date: string; document_url: string | null }[]).map(
                 (r) => (
-                  <li key={r.id} className="flex justify-between">
+                  <li key={r.id} className="flex justify-between items-center gap-2">
                     <span className="text-foreground">{r.state}</span>
-                    <span className="text-muted-foreground">expires {formatDate(r.expiry_date)}</span>
+                    <span className="flex items-center gap-2">
+                      <span className="text-muted-foreground">expires {formatDate(r.expiry_date)}</span>
+                      {r.document_url && (
+                        <a
+                          href={r.document_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline text-xs font-medium"
+                          aria-label="View registration document"
+                        >
+                          View
+                        </a>
+                      )}
+                    </span>
                   </li>
                 )
               )}

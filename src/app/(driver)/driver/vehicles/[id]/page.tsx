@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Key, Droplets, Wrench, AlertTriangle } from "lucide-react";
+import { Key, Droplets, Wrench, AlertTriangle, FileText } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
 export default async function VehicleDetailPage({
@@ -22,7 +22,9 @@ export default async function VehicleDetailPage({
       keys(*),
       fluid_checks(*),
       maintenance_records(*),
-      maintenance_alerts(*)
+      maintenance_alerts(*),
+      insurance(*),
+      registrations(*)
     `
     )
     .eq("id", id)
@@ -85,6 +87,90 @@ export default async function VehicleDetailPage({
             </CardContent>
           </Card>
         )}
+
+      <Card>
+        <CardHeader className="pb-2">
+          <h2 className="font-semibold flex items-center gap-2 text-foreground">
+            Insurance
+          </h2>
+        </CardHeader>
+        <CardContent>
+          {(vehicle.insurance as unknown[])?.length > 0 ? (
+            <ul className="space-y-2 text-sm">
+              {(vehicle.insurance as {
+                id: string;
+                provider: string;
+                policy_number: string | null;
+                expiry_date: string;
+                document_url: string | null;
+              }[]).map((i) => (
+                <li key={i.id} className="flex items-center justify-between gap-2">
+                  <span className="text-foreground">
+                    {i.provider}
+                    {i.policy_number && ` — ${i.policy_number}`}
+                    <span className="text-muted-foreground ml-1">(expires {formatDate(i.expiry_date)})</span>
+                  </span>
+                  {i.document_url && (
+                    <a
+                      href={i.document_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+                      aria-label="View insurance document"
+                    >
+                      <FileText className="h-4 w-4" />
+                      View PDF
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No insurance records</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <h2 className="font-semibold flex items-center gap-2 text-foreground">
+            Registrations
+          </h2>
+        </CardHeader>
+        <CardContent>
+          {(vehicle.registrations as unknown[])?.length > 0 ? (
+            <ul className="space-y-2 text-sm">
+              {(vehicle.registrations as {
+                id: string;
+                state: string;
+                expiry_date: string;
+                document_url: string | null;
+              }[]).map((r) => (
+                <li key={r.id} className="flex items-center justify-between gap-2">
+                  <span className="text-foreground">
+                    {r.state}
+                    <span className="text-muted-foreground ml-1">(expires {formatDate(r.expiry_date)})</span>
+                  </span>
+                  {r.document_url && (
+                    <a
+                      href={r.document_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+                      aria-label="View registration document"
+                    >
+                      <FileText className="h-4 w-4" />
+                      View PDF
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">No registration records</p>
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader className="pb-2">

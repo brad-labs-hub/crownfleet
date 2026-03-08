@@ -25,7 +25,7 @@ export default async function AdminDashboardPage() {
   const in90Days = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const today = new Date().toISOString().slice(0, 10);
 
-  const [expiringInsuranceRes, alertsRes, allReceiptsRes, vehiclesForChartsRes, recentReceiptsRes] =
+  const [expiringInsuranceRes, alertsRes, allReceiptsRes, vehiclesForChartsRes, recentReceiptsRes, maintenanceYtdRes] =
     await Promise.all([
       supabase
         .from("insurance")
@@ -38,6 +38,7 @@ export default async function AdminDashboardPage() {
       supabase.from("receipts").select("amount, category, date, vehicle_id").gte("date", ytdStart),
       supabase.from("vehicles").select("id, make, model, year"),
       supabase.from("receipts").select("id, amount, category, date, vendor").order("created_at", { ascending: false }).limit(5),
+      supabase.from("maintenance_records").select("vehicle_id, cost").gte("date", ytdStart),
     ]);
 
   const expiringInsurance = expiringInsuranceRes.data ?? [];
@@ -70,11 +71,36 @@ export default async function AdminDashboardPage() {
   allReceipts.forEach((r) => {
     if (r.vehicle_id) vehicleMap.set(r.vehicle_id, (vehicleMap.get(r.vehicle_id) ?? 0) + Number(r.amount));
   });
+  (maintenanceYtdRes.data ?? []).forEach((m) => {
+    if (m.vehicle_id) vehicleMap.set(m.vehicle_id, (vehicleMap.get(m.vehicle_id) ?? 0) + Number(m.cost ?? 0));
+  });
   const vehicleData = Array.from(vehicleMap.entries())
     .map(([vid, total]) => {
       const v = vehicles.find((vv) => vv.id === vid);
       return { name: v ? `${v.year} ${v.make} ${v.model}` : "Unknown", total };
     }).sort((a, b) => b.total - a.total).slice(0, 8);
+
+  // Fuel (gas) only: by vehicle and by month
+  const gasReceipts = allReceipts.filter((r) => r.category === "gas");
+  const fuelVehicleMap = new Map<string, number>();
+  gasReceipts.forEach((r) => {
+    if (r.vehicle_id) fuelVehicleMap.set(r.vehicle_id, (fuelVehicleMap.get(r.vehicle_id) ?? 0) + Number(r.amount));
+  });
+  const fuelVehicleData = Array.from(fuelVehicleMap.entries())
+    .map(([vid, total]) => {
+      const v = vehicles.find((vv) => vv.id === vid);
+      return { name: v ? `${v.year} ${v.make} ${v.model}` : "Unknown", total };
+    }).sort((a, b) => b.total - a.total).slice(0, 8);
+  const fuelMonthMap = new Map<string, number>();
+  for (let i = 5; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    fuelMonthMap.set(d.toLocaleString("en-US", { month: "short", year: "2-digit" }), 0);
+  }
+  gasReceipts.forEach((r) => {
+    const key = new Date(r.date).toLocaleString("en-US", { month: "short", year: "2-digit" });
+    if (fuelMonthMap.has(key)) fuelMonthMap.set(key, (fuelMonthMap.get(key) ?? 0) + Number(r.amount));
+  });
+  const fuelMonthlyData = Array.from(fuelMonthMap.entries()).map(([month, total]) => ({ month, total }));
 
   const todayLabel = new Date().toLocaleDateString("en-US", {
     weekday: "long", month: "long", day: "numeric", year: "numeric",
@@ -349,10 +375,36 @@ export default async function AdminDashboardPage() {
 
       {vehicleData.length > 0 && (
         <div className="rounded-2xl bg-card border border-border p-5">
-          <p className="text-sm font-bold font-syne text-foreground mb-1">Top Vehicles by Spend</p>
-          <p className="text-xs text-muted-foreground mb-4">Year to date</p>
+          <p className="text-sm font-bold font-syne text-foreground mb-1">Top Vehicles by Total Spend</p>
+          <p className="text-xs text-muted-foreground mb-4">Receipts + maintenance, year to date</p>
           <PerVehicleChart data={vehicleData} />
         </div>
+      )}
+
+      {(fuelVehicleData.length > 0 || fuelMonthlyData.some((d) => d.total > 0)) && (
+        <>
+          <div className="flex items-center gap-3 pt-2">
+            <h2 className="text-base font-bold font-syne text-foreground whitespace-nowrap">Fuel</h2>
+            <div className="flex-1 h-px bg-border" />
+            <span className="text-xs text-muted-foreground whitespace-nowrap">Gas receipts, YTD / last 6 months</span>
+          </div>
+          <div className="grid md:grid-cols-2 gap-5">
+            {fuelMonthlyData.some((d) => d.total > 0) && (
+              <div className="rounded-2xl bg-card border border-border p-5">
+                <p className="text-sm font-bold font-syne text-foreground mb-1">Fuel by month</p>
+                <p className="text-xs text-muted-foreground mb-4">Last 6 months</p>
+                <MonthlySpendChart data={fuelMonthlyData} />
+              </div>
+            )}
+            {fuelVehicleData.length > 0 && (
+              <div className="rounded-2xl bg-card border border-border p-5">
+                <p className="text-sm font-bold font-syne text-foreground mb-1">Fuel by vehicle</p>
+                <p className="text-xs text-muted-foreground mb-4">Year to date</p>
+                <PerVehicleChart data={fuelVehicleData} />
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

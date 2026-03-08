@@ -5,16 +5,33 @@ import { VehicleImage } from "@/components/vehicle-image";
 
 export default async function VehiclesListPage() {
   const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const { data: assignmentRows } = user
+    ? await supabase.from("driver_assignments").select("vehicle_id").eq("user_id", user.id)
+    : { data: [] };
+  const assignedVehicleIds = new Set((assignmentRows ?? []).map((r) => r.vehicle_id));
+
   const { data: vehicles } = await supabase
     .from("vehicles")
     .select("id, make, model, year, vin, color, license_plate, preview_image_path, location:locations(name, code)")
     .order("make");
 
+  const sortedVehicles = (vehicles ?? []).slice().sort((a, b) => {
+    const aAssigned = assignedVehicleIds.has(a.id);
+    const bAssigned = assignedVehicleIds.has(b.id);
+    if (aAssigned && !bAssigned) return -1;
+    if (!aAssigned && bAssigned) return 1;
+    return 0;
+  });
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-foreground">Vehicles</h1>
+      {assignedVehicleIds.size > 0 && (
+        <p className="text-sm text-muted-foreground">Your assigned vehicles are listed first.</p>
+      )}
       <div className="space-y-3">
-        {vehicles?.map((v) => {
+        {sortedVehicles.map((v) => {
           const previewUrl = v.preview_image_path
             ? supabase.storage.from("vehicle-previews").getPublicUrl(v.preview_image_path).data.publicUrl
             : null;
@@ -58,7 +75,7 @@ export default async function VehiclesListPage() {
           </Link>
           );
         })}
-        {(!vehicles || vehicles.length === 0) && (
+        {sortedVehicles.length === 0 && (
           <p className="text-muted-foreground text-center py-8">No vehicles in fleet</p>
         )}
       </div>

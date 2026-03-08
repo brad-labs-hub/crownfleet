@@ -31,6 +31,7 @@ export default function EditVehiclePage() {
   const [notes, setNotes] = useState("");
   const [locationId, setLocationId] = useState("");
   const [status, setStatus] = useState("active");
+  const [currentOdometer, setCurrentOdometer] = useState("");
   const [locations, setLocations] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -57,6 +58,7 @@ export default function EditVehiclePage() {
       setLocationId(v.location_id ?? "");
       setStatus(v.status ?? "active");
       setPreviewImagePath(v.preview_image_path ?? null);
+      setCurrentOdometer(v.current_odometer != null ? String(v.current_odometer) : "");
     }
   }, [id]);
 
@@ -81,6 +83,8 @@ export default function EditVehiclePage() {
           notes: notes || null,
           location_id: locationId || null,
           status,
+          current_odometer: currentOdometer ? parseInt(currentOdometer, 10) : null,
+          odometer_updated_at: currentOdometer ? new Date().toISOString() : undefined,
           updated_at: new Date().toISOString(),
         })
         .eq("id", id);
@@ -209,6 +213,17 @@ export default function EditVehiclePage() {
             <div>
               <Label htmlFor="color">Color</Label>
               <Input id="color" value={color} onChange={(e) => setColor(e.target.value)} />
+            </div>
+            <div>
+              <Label htmlFor="currentOdometer">Current odometer (mi)</Label>
+              <Input
+                id="currentOdometer"
+                type="number"
+                min="0"
+                placeholder="e.g. 45000"
+                value={currentOdometer}
+                onChange={(e) => setCurrentOdometer(e.target.value)}
+              />
             </div>
             <div>
               <Label htmlFor="notes">Notes</Label>

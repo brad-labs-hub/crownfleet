@@ -5,26 +5,51 @@ import { VehicleGrid } from "./vehicle-grid";
 
 export default async function AdminVehiclesPage() {
   const supabase = await createClient();
+  const in60Days = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-  const [{ data: vehicles }, { data: locations }] = await Promise.all([
-    supabase
-      .from("vehicles")
-      .select(
-        "id, make, model, year, vin, color, license_plate, status, preview_image_path, location:locations(name)"
-      )
-      .order("make"),
-    supabase.from("locations").select("id, name").order("name"),
-  ]);
+  const [{ data: vehicles }, { data: locations }, { data: insurance }, { data: registrations }, { data: alerts }] =
+    await Promise.all([
+      supabase
+        .from("vehicles")
+        .select(
+          "id, make, model, year, vin, color, license_plate, status, preview_image_path, location:locations(name)"
+        )
+        .order("make"),
+      supabase.from("locations").select("id, name").order("name"),
+      supabase.from("insurance").select("vehicle_id, expiry_date").lte("expiry_date", in60Days),
+      supabase.from("registrations").select("vehicle_id, expiry_date").lte("expiry_date", in60Days),
+      supabase
+        .from("maintenance_alerts")
+        .select("vehicle_id, due_date")
+        .eq("dismissed", false)
+        .not("due_date", "is", null)
+        .lte("due_date", in60Days),
+    ]);
 
-  const vehiclesWithUrls = (vehicles ?? []).map((v) => ({
-    ...v,
-    location: (Array.isArray(v.location) ? v.location[0] : v.location) as { name: string } | null,
-    previewUrl: v.preview_image_path
-      ? supabase.storage
-          .from("vehicle-previews")
-          .getPublicUrl(v.preview_image_path).data.publicUrl
-      : null,
-  }));
+  const vehiclesWithUrls = (vehicles ?? []).map((v) => {
+    const loc = (Array.isArray(v.location) ? v.location[0] : v.location) as { name: string } | null;
+    const allDates: { date: string; label: string }[] = [];
+    (insurance ?? [])
+      .filter((i) => i.vehicle_id === v.id)
+      .forEach((i) => allDates.push({ date: i.expiry_date, label: "Insurance" }));
+    (registrations ?? [])
+      .filter((r) => r.vehicle_id === v.id)
+      .forEach((r) => allDates.push({ date: r.expiry_date, label: "Registration" }));
+    (alerts ?? [])
+      .filter((a) => a.vehicle_id === v.id && a.due_date)
+      .forEach((a) => allDates.push({ date: a.due_date!, label: "Alert" }));
+    allDates.sort((a, b) => a.date.localeCompare(b.date));
+    const next = allDates[0];
+    return {
+      ...v,
+      location: loc,
+      previewUrl: v.preview_image_path
+        ? supabase.storage.from("vehicle-previews").getPublicUrl(v.preview_image_path).data.publicUrl
+        : null,
+      nextDueDate: next?.date,
+      nextDueLabel: next?.label,
+    };
+  });
 
   return (
     <div className="space-y-6">

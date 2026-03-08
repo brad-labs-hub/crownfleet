@@ -21,6 +21,7 @@ export default function NewMaintenancePage() {
   const [vendor, setVendor] = useState("");
   const [nextDueMiles, setNextDueMiles] = useState("");
   const [nextDueDate, setNextDueDate] = useState("");
+  const [createFollowUpAlert, setCreateFollowUpAlert] = useState(true);
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +75,15 @@ export default function NewMaintenancePage() {
         created_by: user.id,
       });
       if (error) throw error;
+      if (createFollowUpAlert && (nextDueDate || nextDueMiles)) {
+        await supabase.from("maintenance_alerts").insert({
+          vehicle_id: vehicleId,
+          alert_type: type.replace(/_/g, " ") + " (next due)",
+          due_date: nextDueDate || null,
+          due_miles: nextDueMiles ? parseInt(nextDueMiles) : null,
+          severity: "medium",
+        });
+      }
       router.push(`/driver/vehicles/${vehicleId}`);
       router.refresh();
     } catch (err: unknown) {
@@ -178,6 +188,20 @@ export default function NewMaintenancePage() {
                 />
               </div>
             </div>
+            {(nextDueDate || nextDueMiles) && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="createFollowUpAlert"
+                  checked={createFollowUpAlert}
+                  onChange={(e) => setCreateFollowUpAlert(e.target.checked)}
+                  className="rounded border-input"
+                />
+                <Label htmlFor="createFollowUpAlert" className="font-normal text-sm text-muted-foreground">
+                  Create follow-up maintenance alert
+                </Label>
+              </div>
+            )}
             <div>
               <Label htmlFor="receiptFile">Receipt / document (optional)</Label>
               <Input

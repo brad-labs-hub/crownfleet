@@ -18,6 +18,8 @@ type Vehicle = {
   preview_image_path: string | null;
   previewUrl: string | null;
   location: { name: string } | null;
+  nextDueDate?: string;
+  nextDueLabel?: string;
 };
 
 const STATUS_STYLES: Record<string, string> = {
@@ -37,6 +39,15 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const INACTIVE_STATUSES = new Set(["archived", "sold"]);
+
+function formatDueDate(iso: string) {
+  const d = new Date(iso);
+  const now = new Date();
+  if (d.getFullYear() !== now.getFullYear()) {
+    return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  }
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
 
 type StatusFilter = "active" | "in_repair" | "out_of_service" | "archived" | "sold" | "all";
 
@@ -182,12 +193,12 @@ function VehicleCard({ vehicle: v }: { vehicle: Vehicle }) {
   return (
     <Link href={`/admin/vehicles/${v.id}`}>
       <div
-        className={`group rounded-xl border border-border bg-card overflow-hidden hover:border-primary/60 hover:shadow-lg transition-all duration-200 cursor-pointer ${
+        className={`group rounded-xl border border-border bg-card overflow-hidden hover:border-primary/50 hover:shadow-xl hover:-translate-y-0.5 transition-all duration-200 cursor-pointer ${
           isInactive ? "opacity-60" : ""
         }`}
       >
         {/* Image panel */}
-        <div className="relative aspect-[16/10] bg-muted overflow-hidden">
+        <div className="relative aspect-[16/10] bg-neutral-100 dark:bg-neutral-800 overflow-hidden">
           <VehicleImage
             make={v.make}
             model={v.model}
@@ -195,7 +206,7 @@ function VehicleCard({ vehicle: v }: { vehicle: Vehicle }) {
             color={v.color}
             vin={v.vin}
             imageUrl={v.previewUrl}
-            className="w-full h-full object-cover"
+            className="w-full h-full p-2"
           />
           {/* Status badge overlay (non-active only) */}
           {status !== "active" && (
@@ -205,6 +216,8 @@ function VehicleCard({ vehicle: v }: { vehicle: Vehicle }) {
               {STATUS_LABELS[status] ?? status}
             </span>
           )}
+          {/* Subtle bottom gradient on hover */}
+          <div className="absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none" />
         </div>
 
         {/* Details */}
@@ -226,6 +239,11 @@ function VehicleCard({ vehicle: v }: { vehicle: Vehicle }) {
               </span>
             )}
           </div>
+          {v.nextDueDate && v.nextDueLabel && (
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 font-medium pt-0.5">
+              Due: {v.nextDueLabel} {formatDueDate(v.nextDueDate)}
+            </p>
+          )}
         </div>
       </div>
     </Link>

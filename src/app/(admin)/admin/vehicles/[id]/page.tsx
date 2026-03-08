@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { formatDate, formatCurrency } from "@/lib/utils";
+import { VehicleDriverAssignments } from "./vehicle-driver-assignments";
 
 const STATUS_STYLES: Record<string, string> = {
   active: "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
@@ -24,10 +25,12 @@ export default async function AdminVehicleDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
-  const { data: vehicle, error } = await supabase
-    .from("vehicles")
-    .select(
-      `
+  const ytdStart = `${new Date().getFullYear()}-01-01`;
+  const [vehicleRes, receiptsSumRes, maintenanceSumRes, assignmentsRes, driversRes] = await Promise.all([
+    supabase
+      .from("vehicles")
+      .select(
+        `
       *,
       location:locations(*),
       maintenance_records(*),
@@ -35,9 +38,26 @@ export default async function AdminVehicleDetailPage({
       registrations(*),
       keys(*)
     `
-    )
-    .eq("id", id)
-    .single();
+      )
+      .eq("id", id)
+      .single(),
+    supabase.from("receipts").select("amount").eq("vehicle_id", id).gte("date", ytdStart),
+    supabase.from("maintenance_records").select("cost").eq("vehicle_id", id).gte("date", ytdStart),
+    supabase.from("driver_assignments").select("user_id").eq("vehicle_id", id),
+    supabase.from("user_profiles").select("id, name, email").eq("role", "driver"),
+  ]);
+
+  const { data: vehicle, error } = vehicleRes;
+  const receiptsYtd = (receiptsSumRes.data ?? []).reduce((s, r) => s + Number(r.amount), 0);
+  const maintenanceYtd = (maintenanceSumRes.data ?? []).reduce((s, m) => s + Number(m.cost ?? 0), 0);
+  const totalYtd = receiptsYtd + maintenanceYtd;
+
+  const assignmentUserIds = (assignmentsRes.data ?? []).map((a) => a.user_id);
+  const driversList = driversRes.data ?? [];
+  const assignedProfiles = assignmentUserIds
+    .map((uid) => driversList.find((d) => d.id === uid))
+    .filter(Boolean)
+    .map((d) => ({ user_id: d!.id, name: d!.name, email: d!.email }));
 
   if (error || !vehicle) notFound();
 
@@ -89,7 +109,51 @@ export default async function AdminVehicleDetailPage({
           {vehicle.vin && <p><span className="text-muted-foreground">VIN:</span> {vehicle.vin}</p>}
           {vehicle.license_plate && <p><span className="text-muted-foreground">License:</span> {vehicle.license_plate}</p>}
           {vehicle.color && <p><span className="text-muted-foreground">Color:</span> {vehicle.color}</p>}
+          {(vehicle as { current_odometer?: number | null }).current_odometer != null && (
+            <p>
+              <span className="text-muted-foreground">Odometer:</span>{" "}
+              {(vehicle as { current_odometer: number }).current_odometer.toLocaleString()} mi
+              {(vehicle as { odometer_updated_at?: string | null }).odometer_updated_at && (
+                <span className="text-muted-foreground ml-1">
+                  (updated {formatDate((vehicle as { odometer_updated_at: string }).odometer_updated_at.slice(0, 10))})
+                </span>
+              )}
+            </p>
+          )}
           {vehicle.notes && <p><span className="text-muted-foreground">Notes:</span> {vehicle.notes}</p>}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="font-semibold text-foreground">Cost summary</h2>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Receipts (YTD)</span>
+            <span className="font-medium text-foreground">{formatCurrency(receiptsYtd)}</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">Maintenance (YTD)</span>
+            <span className="font-medium text-foreground">{formatCurrency(maintenanceYtd)}</span>
+          </div>
+          <div className="flex justify-between pt-2 border-t border-border">
+            <span className="font-medium text-foreground">Total spend (YTD)</span>
+            <span className="font-bold text-foreground">{formatCurrency(totalYtd)}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="font-semibold text-foreground">Assigned drivers</h2>
+        </CardHeader>
+        <CardContent>
+          <VehicleDriverAssignments
+            vehicleId={id}
+            assigned={assignedProfiles}
+            drivers={driversList}
+          />
         </CardContent>
       </Card>
 
@@ -177,9 +241,19 @@ export default async function AdminVehicleDetailPage({
                 type: string;
                 date: string;
                 cost: number;
+                status?: string;
+                scheduled_date?: string | null;
               }[]).map((m) => (
-                <li key={m.id} className="flex justify-between">
-                  <span className="text-foreground capitalize">{m.type.replace("_", " ")} — {formatDate(m.date)}</span>
+                <li key={m.id} className="flex justify-between items-center gap-2">
+                  <span className="text-foreground">
+                    <span className="capitalize">{m.type.replace("_", " ")}</span> — {formatDate(m.date)}
+                    {m.status && m.status !== "completed" && (
+                      <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+                        {m.status === "scheduled" ? "Scheduled" : "In progress"}
+                        {m.scheduled_date && ` ${formatDate(m.scheduled_date)}`}
+                      </span>
+                    )}
+                  </span>
                   <span className="text-muted-foreground">{m.cost ? formatCurrency(m.cost) : "—"}</span>
                 </li>
               ))}

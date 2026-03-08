@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Key, Droplets, Wrench, AlertTriangle, FileText } from "lucide-react";
+import { Key, Droplets, Wrench, AlertTriangle, FileText, ClipboardCheck } from "lucide-react";
 import { formatDate, formatCurrency } from "@/lib/utils";
 
 export default async function VehicleDetailPage({
@@ -30,6 +30,13 @@ export default async function VehicleDetailPage({
     .eq("id", id)
     .single();
 
+  const { data: inspections } = await supabase
+    .from("vehicle_inspections")
+    .select("id, inspected_at, result, notes")
+    .eq("vehicle_id", id)
+    .order("inspected_at", { ascending: false })
+    .limit(5);
+
   if (error || !vehicle) notFound();
 
   const loc = vehicle.location as { name: string; code: string } | null;
@@ -47,15 +54,28 @@ export default async function VehicleDetailPage({
           {vehicle.license_plate && (
             <p className="text-sm text-muted-foreground">{vehicle.license_plate}</p>
           )}
+          {(vehicle as { current_odometer?: number | null }).current_odometer != null && (
+            <p className="text-sm text-muted-foreground">
+              Odometer: {(vehicle as { current_odometer: number }).current_odometer.toLocaleString()} mi
+            </p>
+          )}
           {loc && (
             <p className="text-sm text-muted-foreground mt-1">
               Location: {loc.name}
             </p>
           )}
         </div>
-        <Link href={`/driver/vehicles/${id}/maintenance/new`}>
-          <Button size="sm">Log Maintenance</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Link href={`/driver/vehicles/${id}/mileage`}>
+            <Button size="sm" variant="outline">Log mileage</Button>
+          </Link>
+          <Link href={`/driver/vehicles/${id}/inspection/new`}>
+            <Button size="sm" variant="outline">Pre-trip inspection</Button>
+          </Link>
+          <Link href={`/driver/vehicles/${id}/maintenance/new`}>
+            <Button size="sm">Log Maintenance</Button>
+          </Link>
+        </div>
       </div>
 
       {vehicle.maintenance_alerts &&
@@ -88,87 +108,123 @@ export default async function VehicleDetailPage({
           </Card>
         )}
 
-      <Card>
-        <CardHeader className="pb-2">
-          <h2 className="font-semibold flex items-center gap-2 text-foreground">
-            Insurance
-          </h2>
-        </CardHeader>
-        <CardContent>
-          {(vehicle.insurance as unknown[])?.length > 0 ? (
+      {inspections && inspections.length > 0 && (
+        <Card>
+          <CardHeader className="pb-2">
+            <h2 className="font-semibold flex items-center gap-2 text-foreground">
+              <ClipboardCheck className="h-4 w-4" />
+              Recent inspections
+            </h2>
+          </CardHeader>
+          <CardContent>
             <ul className="space-y-2 text-sm">
-              {(vehicle.insurance as {
-                id: string;
-                provider: string;
-                policy_number: string | null;
-                expiry_date: string;
-                document_url: string | null;
-              }[]).map((i) => (
-                <li key={i.id} className="flex items-center justify-between gap-2">
-                  <span className="text-foreground">
-                    {i.provider}
-                    {i.policy_number && ` — ${i.policy_number}`}
-                    <span className="text-muted-foreground ml-1">(expires {formatDate(i.expiry_date)})</span>
-                  </span>
-                  {i.document_url && (
-                    <a
-                      href={i.document_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
-                      aria-label="View insurance document"
-                    >
-                      <FileText className="h-4 w-4" />
-                      View PDF
-                    </a>
-                  )}
-                </li>
-              ))}
+              {inspections.map((inv) => {
+                const date = inv.inspected_at.slice(0, 10);
+                const items = (inv.result as { name: string; ok: boolean }[]) || [];
+                const failed = items.filter((i) => !i.ok).map((i) => i.name);
+                return (
+                  <li key={inv.id} className="text-foreground">
+                    {formatDate(date)}
+                    {failed.length > 0 && (
+                      <span className="text-amber-600 dark:text-amber-400 ml-1">
+                        — {failed.join(", ")} failed
+                      </span>
+                    )}
+                    {inv.notes && <span className="text-muted-foreground block">{inv.notes}</span>}
+                  </li>
+                );
+              })}
             </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">No insurance records</p>
-          )}
-        </CardContent>
-      </Card>
+            <Link href={`/driver/vehicles/${id}/inspection/new`} className="mt-2 inline-block">
+              <Button variant="outline" size="sm">New inspection</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      )}
 
-      <Card>
+      <Card className="border-primary/20">
         <CardHeader className="pb-2">
-          <h2 className="font-semibold flex items-center gap-2 text-foreground">
-            Registrations
+          <h2 className="font-semibold flex items-center gap-2 text-foreground text-base">
+            <FileText className="h-5 w-5 text-primary" />
+            Documents
           </h2>
+          <p className="text-sm text-muted-foreground">Insurance and registration — tap to open PDF</p>
         </CardHeader>
-        <CardContent>
-          {(vehicle.registrations as unknown[])?.length > 0 ? (
-            <ul className="space-y-2 text-sm">
-              {(vehicle.registrations as {
-                id: string;
-                state: string;
-                expiry_date: string;
-                document_url: string | null;
-              }[]).map((r) => (
-                <li key={r.id} className="flex items-center justify-between gap-2">
-                  <span className="text-foreground">
-                    {r.state}
-                    <span className="text-muted-foreground ml-1">(expires {formatDate(r.expiry_date)})</span>
-                  </span>
-                  {r.document_url && (
-                    <a
-                      href={r.document_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
-                      aria-label="View registration document"
-                    >
-                      <FileText className="h-4 w-4" />
-                      View PDF
-                    </a>
-                  )}
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-sm text-muted-foreground">No registration records</p>
-          )}
+        <CardContent className="space-y-5">
+          <section>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Insurance</h3>
+            {(vehicle.insurance as unknown[])?.length > 0 ? (
+              <ul className="space-y-2">
+                {(vehicle.insurance as {
+                  id: string;
+                  provider: string;
+                  policy_number: string | null;
+                  expiry_date: string;
+                  document_url: string | null;
+                }[]).map((i) => (
+                  <li key={i.id} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg p-3 bg-muted/40">
+                    <div>
+                      <span className="font-medium text-foreground">{i.provider}</span>
+                      {i.policy_number && <span className="text-muted-foreground"> — {i.policy_number}</span>}
+                      <p className="text-xs text-muted-foreground">Expires {formatDate(i.expiry_date)}</p>
+                    </div>
+                    {i.document_url ? (
+                      <a
+                        href={i.document_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity shrink-0"
+                        aria-label="View insurance PDF"
+                      >
+                        <FileText className="h-4 w-4" />
+                        View PDF
+                      </a>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No document</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">No insurance records</p>
+            )}
+          </section>
+          <section>
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Registrations</h3>
+            {(vehicle.registrations as unknown[])?.length > 0 ? (
+              <ul className="space-y-2">
+                {(vehicle.registrations as {
+                  id: string;
+                  state: string;
+                  expiry_date: string;
+                  document_url: string | null;
+                }[]).map((r) => (
+                  <li key={r.id} className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between gap-2 rounded-lg p-3 bg-muted/40">
+                    <div>
+                      <span className="font-medium text-foreground">{r.state}</span>
+                      <p className="text-xs text-muted-foreground">Expires {formatDate(r.expiry_date)}</p>
+                    </div>
+                    {r.document_url ? (
+                      <a
+                        href={r.document_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 py-2 px-4 rounded-lg bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity shrink-0"
+                        aria-label="View registration PDF"
+                      >
+                        <FileText className="h-4 w-4" />
+                        View PDF
+                      </a>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">No document</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">No registration records</p>
+            )}
+          </section>
         </CardContent>
       </Card>
 

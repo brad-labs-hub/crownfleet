@@ -175,7 +175,7 @@ export function VehicleImage({ make, model, year, color, imageUrl, className = "
         src={imageUrl}
         alt={`${year} ${make} ${model}`}
         onError={() => setState(brandLogoUrl ? 1 : 2)}
-        className={`object-cover rounded ${className}`}
+        className={`object-contain object-center w-full h-full transition-transform duration-300 group-hover:scale-105 ${className}`}
       />
     );
   }
@@ -188,7 +188,7 @@ export function VehicleImage({ make, model, year, color, imageUrl, className = "
         src={photoUrl}
         alt={`${year} ${make} ${model}`}
         onError={() => setState(brandLogoUrl ? 1 : 2)}
-        className={`object-cover rounded ${className}`}
+        className={`object-contain object-center w-full h-full transition-transform duration-300 group-hover:scale-105 ${className}`}
       />
     );
   }

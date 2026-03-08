@@ -24,6 +24,9 @@ export default function AdminNewMaintenancePage() {
   const [vendor, setVendor] = useState("");
   const [nextDueMiles, setNextDueMiles] = useState("");
   const [nextDueDate, setNextDueDate] = useState("");
+  const [createFollowUpAlert, setCreateFollowUpAlert] = useState(true);
+  const [status, setStatus] = useState<"scheduled" | "in_progress" | "completed">("completed");
+  const [scheduledDate, setScheduledDate] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,9 +74,22 @@ export default function AdminNewMaintenancePage() {
         receipt_url: receiptUrl,
         next_due_miles: nextDueMiles ? parseInt(nextDueMiles) : null,
         next_due_date: nextDueDate || null,
+        status,
+        scheduled_date: scheduledDate || null,
         created_by: user.id,
       });
       if (insertError) throw insertError;
+
+      if (createFollowUpAlert && (nextDueDate || nextDueMiles)) {
+        await supabase.from("maintenance_alerts").insert({
+          vehicle_id: vehicleId,
+          alert_type: type.replace(/_/g, " ") + " (next due)",
+          due_date: nextDueDate || null,
+          due_miles: nextDueMiles ? parseInt(nextDueMiles) : null,
+          severity: "medium",
+        });
+      }
+
       router.push(`/admin/vehicles/${vehicleId}`);
       router.refresh();
     } catch (err: unknown) {
@@ -156,6 +172,30 @@ export default function AdminNewMaintenancePage() {
               />
             </div>
             <div>
+              <Label htmlFor="status">Status</Label>
+              <select
+                id="status"
+                value={status}
+                onChange={(e) => setStatus(e.target.value as "scheduled" | "in_progress" | "completed")}
+                className="w-full mt-1 px-4 py-2 border border-input rounded-md bg-background text-foreground"
+              >
+                <option value="completed">Completed</option>
+                <option value="scheduled">Scheduled</option>
+                <option value="in_progress">In progress</option>
+              </select>
+            </div>
+            {(status === "scheduled" || status === "in_progress") && (
+              <div>
+                <Label htmlFor="scheduledDate">Scheduled date</Label>
+                <Input
+                  id="scheduledDate"
+                  type="date"
+                  value={scheduledDate}
+                  onChange={(e) => setScheduledDate(e.target.value)}
+                />
+              </div>
+            )}
+            <div>
               <Label htmlFor="vendor">Vendor</Label>
               <Input
                 id="vendor"
@@ -184,6 +224,20 @@ export default function AdminNewMaintenancePage() {
                 />
               </div>
             </div>
+            {(nextDueDate || nextDueMiles) && (
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="createFollowUpAlert"
+                  checked={createFollowUpAlert}
+                  onChange={(e) => setCreateFollowUpAlert(e.target.checked)}
+                  className="rounded border-input"
+                />
+                <Label htmlFor="createFollowUpAlert" className="font-normal text-sm text-muted-foreground">
+                  Create follow-up maintenance alert from next due date/miles
+                </Label>
+              </div>
+            )}
             <div>
               <Label htmlFor="receiptFile">Receipt / document (optional)</Label>
               <Input

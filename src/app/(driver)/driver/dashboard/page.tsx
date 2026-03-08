@@ -5,14 +5,16 @@ import { formatDate, formatCurrency } from "@/lib/utils";
 
 export default async function DriverDashboardPage() {
   const supabase = await createClient();
+  const in14Days = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const { data: vehicles } = await supabase
     .from("vehicles")
     .select("id, make, model, year, location:locations(name)")
     .order("make");
   const { data: alerts } = await supabase
     .from("maintenance_alerts")
-    .select("id, alert_type, due_date, vehicle:vehicles(make, model)")
+    .select("id, alert_type, due_date, vehicle:vehicles(id, make, model)")
     .eq("dismissed", false)
+    .or(`due_date.is.null,due_date.lte.${in14Days}`)
     .order("due_date", { ascending: true })
     .limit(5);
   const { data: recentReceipts } = await supabase
@@ -40,27 +42,33 @@ export default async function DriverDashboardPage() {
         </Link>
       </div>
 
-      {/* Maintenance alerts */}
+      {/* Maintenance alerts — due soon (next 14 days) */}
       {alerts && alerts.length > 0 && (
         <div className="rounded-2xl bg-card border border-border p-5">
           <h2 className="font-semibold text-foreground flex items-center gap-2 text-sm mb-3">
             <div className="w-6 h-6 rounded-lg flex items-center justify-center" style={{ background: "var(--amber-dim)" }}>
               <AlertTriangle className="h-3.5 w-3.5" style={{ color: "var(--amber)" }} />
             </div>
-            Maintenance Alerts
+            Due soon (next 14 days)
           </h2>
           <div className="space-y-1">
-            {alerts.map((a) => (
-              <div key={a.id} className="flex justify-between items-center py-2 px-2 -mx-2 rounded-xl text-sm border-b border-border last:border-0">
-                <span className="text-foreground text-xs font-medium">
-                  {(a.vehicle as unknown as { make: string; model: string })?.make}{" "}
-                  {(a.vehicle as unknown as { make: string; model: string })?.model}
-                </span>
-                <span className="text-xs font-semibold shrink-0" style={{ color: "var(--amber)" }}>
-                  {a.due_date ? formatDate(a.due_date) : a.alert_type}
-                </span>
-              </div>
-            ))}
+            {alerts.map((a) => {
+              const v = a.vehicle as unknown as { id: string; make: string; model: string } | null;
+              return (
+                <Link
+                  key={a.id}
+                  href={v ? `/driver/vehicles/${v.id}` : "#"}
+                  className="flex justify-between items-center py-2 px-2 -mx-2 rounded-xl text-sm border-b border-border last:border-0 hover:bg-accent transition-colors"
+                >
+                  <span className="text-foreground text-xs font-medium">
+                    {v ? `${v.make} ${v.model}` : "—"}
+                  </span>
+                  <span className="text-xs font-semibold shrink-0" style={{ color: "var(--amber)" }}>
+                    {a.due_date ? formatDate(a.due_date) : a.alert_type}
+                  </span>
+                </Link>
+              );
+            })}
           </div>
         </div>
       )}

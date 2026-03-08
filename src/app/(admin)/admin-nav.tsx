@@ -4,11 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, Car, Receipt, FileDown,
-  Upload, Users, ClipboardList, MapPin,
+  Upload, Users, ClipboardList, MapPin, CalendarClock,
 } from "lucide-react";
 
 const NAV_ITEMS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/expiring-soon", label: "Expiring soon", icon: CalendarClock },
   { href: "/admin/locations", label: "Locations", icon: MapPin },
   { href: "/admin/vehicles", label: "Vehicles", icon: Car },
   { href: "/admin/receipts", label: "Receipts", icon: Receipt },

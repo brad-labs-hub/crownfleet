@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { formatDate, formatCurrency } from "@/lib/utils";
-import { FileText, ExternalLink, Loader2, Paperclip } from "lucide-react";
+import { FileText, ExternalLink, Loader2, Paperclip, Trash2 } from "lucide-react";
 
 const STATUS_STYLES: Record<string, string> = {
   completed:   "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300",
@@ -51,6 +51,30 @@ export function MaintenanceRecordList({
   // Local optimistic receipt_url map so the link appears immediately
   const [localUrls, setLocalUrls] = useState<Record<string, string>>({});
 
+  // Soft-delete: hide rows optimistically after deletion
+  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set());
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [confirmId, setConfirmId] = useState<string | null>(null);
+
+  async function handleDelete(recordId: string) {
+    setDeletingId(recordId);
+    try {
+      const { error } = await supabase
+        .from("maintenance_records")
+        .delete()
+        .eq("id", recordId);
+      if (error) throw error;
+      setDeletedIds((prev) => new Set(prev).add(recordId));
+      setConfirmId(null);
+      router.refresh();
+    } catch (err: unknown) {
+      setErrorId(recordId);
+      setErrorMsg(err instanceof Error ? err.message : "Delete failed");
+    } finally {
+      setDeletingId(null);
+    }
+  }
+
   // One hidden file input per record via refs map
   const inputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
@@ -88,10 +112,14 @@ export function MaintenanceRecordList({
   return (
     <ul className="divide-y divide-border">
       {initialRecords.map((m) => {
+        if (deletedIds.has(m.id)) return null;
+
         const status = m.status ?? "completed";
         const receiptUrl = localUrls[m.id] ?? m.receipt_url;
         const isUploading = uploadingId === m.id;
+        const isDeleting = deletingId === m.id;
         const hasError = errorId === m.id;
+        const isConfirming = confirmId === m.id;
 
         return (
           <li key={m.id} className="px-6 py-4 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
@@ -177,6 +205,38 @@ export function MaintenanceRecordList({
 
               {hasError && (
                 <p className="text-[11px] text-destructive">{errorMsg}</p>
+              )}
+
+              {/* Delete */}
+              {isConfirming ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-[11px] text-muted-foreground">Delete?</span>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(m.id)}
+                    disabled={isDeleting}
+                    className="text-[11px] font-medium text-destructive hover:underline disabled:opacity-50"
+                  >
+                    {isDeleting ? "Deleting…" : "Yes"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setConfirmId(null)}
+                    className="text-[11px] text-muted-foreground hover:text-foreground"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setConfirmId(m.id)}
+                  className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-destructive transition-colors"
+                  title="Delete record"
+                >
+                  <Trash2 className="w-3 h-3" />
+                  Delete
+                </button>
               )}
 
               {/* Hidden file input */}

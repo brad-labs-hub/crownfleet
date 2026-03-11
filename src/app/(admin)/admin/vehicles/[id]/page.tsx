@@ -92,6 +92,9 @@ export default async function AdminVehicleDetailPage({
           <Link href={`/admin/vehicles/${id}/alerts`}>
             <Button variant="outline">Alerts</Button>
           </Link>
+          <Link href={`/admin/vehicles/${id}/maintenance`}>
+            <Button variant="outline">Maintenance</Button>
+          </Link>
           <Link href={`/admin/vehicles/${id}/maintenance/new`}>
             <Button variant="outline">Add Maintenance</Button>
           </Link>
@@ -231,6 +234,12 @@ export default async function AdminVehicleDetailPage({
         <CardHeader>
           <div className="flex justify-between items-center">
             <h2 className="font-semibold text-foreground">Maintenance</h2>
+            <Link
+              href={`/admin/vehicles/${id}/maintenance`}
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              View all
+            </Link>
           </div>
         </CardHeader>
         <CardContent>
@@ -240,13 +249,18 @@ export default async function AdminVehicleDetailPage({
                 id: string;
                 type: string;
                 date: string;
-                cost: number;
-                status?: string;
+                cost: number | null;
+                status?: string | null;
                 scheduled_date?: string | null;
+                receipt_url?: string | null;
+                vendor?: string | null;
+                description?: string | null;
               }[]).map((m) => (
                 <li key={m.id} className="flex justify-between items-center gap-2">
                   <span className="text-foreground">
-                    <span className="capitalize">{m.type.replace("_", " ")}</span> — {formatDate(m.date)}
+                    <span className="capitalize">{m.type.replace(/_/g, " ")}</span>
+                    {m.vendor && <span className="text-muted-foreground"> · {m.vendor}</span>}
+                    {" — "}{formatDate(m.date)}
                     {m.status && m.status !== "completed" && (
                       <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
                         {m.status === "scheduled" ? "Scheduled" : "In progress"}
@@ -254,7 +268,19 @@ export default async function AdminVehicleDetailPage({
                       </span>
                     )}
                   </span>
-                  <span className="text-muted-foreground">{m.cost ? formatCurrency(m.cost) : "—"}</span>
+                  <span className="flex items-center gap-3">
+                    {m.receipt_url && (
+                      <a
+                        href={m.receipt_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary hover:underline text-xs font-medium"
+                      >
+                        View doc
+                      </a>
+                    )}
+                    <span className="text-muted-foreground">{m.cost ? formatCurrency(m.cost) : "—"}</span>
+                  </span>
                 </li>
               ))}
             </ul>

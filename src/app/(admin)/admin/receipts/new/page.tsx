@@ -9,7 +9,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { RECEIPT_CATEGORIES, type ReceiptCategory } from "@/types/database";
-import { Upload, FileText, X } from "lucide-react";
+import { Upload, FileText, X, Loader2, Sparkles } from "lucide-react";
+
+type AiFields = Set<"category" | "amount" | "date" | "vendor" | "notes">;
+
+function AiBadge() {
+  return (
+    <span className="ml-1.5 inline-flex items-center gap-0.5 text-[10px] font-medium text-violet-500 dark:text-violet-400">
+      <Sparkles className="w-2.5 h-2.5" />
+      AI
+    </span>
+  );
+}
 
 export default function NewReceiptPage() {
   const [category, setCategory] = useState<ReceiptCategory>("gas");
@@ -24,6 +35,9 @@ export default function NewReceiptPage() {
   const [locations, setLocations] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
+  const [aiFields, setAiFields] = useState<AiFields>(new Set());
   const fileInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const supabase = createClient();
@@ -38,7 +52,39 @@ export default function NewReceiptPage() {
       setLocations(lRes.data ?? []);
     }
     load();
-  }, [supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function handleFileChange(selected: File | null) {
+    setFile(selected);
+    setAiFields(new Set());
+    setScanError(null);
+    if (!selected) return;
+
+    setScanning(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", selected);
+      const res = await fetch("/api/receipts/scan", { method: "POST", body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Scan failed");
+
+      const filled: AiFields = new Set();
+
+      if (data.vendor) { setVendor(data.vendor); filled.add("vendor"); }
+      if (data.amount != null) { setAmount(String(data.amount)); filled.add("amount"); }
+      if (data.date) { setDate(data.date); filled.add("date"); }
+      if (data.category) { setCategory(data.category); filled.add("category"); }
+      if (data.notes) { setNotes(data.notes); filled.add("notes"); }
+
+      setAiFields(filled);
+      if (filled.size === 0) setScanError("Couldn't read receipt — fill in manually");
+    } catch {
+      setScanError("Couldn't read receipt — fill in manually");
+    } finally {
+      setScanning(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -97,7 +143,7 @@ export default function NewReceiptPage() {
                 ref={fileInputRef}
                 type="file"
                 accept=".pdf,.jpg,.jpeg,.png"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                onChange={(e) => handleFileChange(e.target.files?.[0] ?? null)}
                 className="hidden"
               />
               {!file ? (
@@ -108,17 +154,36 @@ export default function NewReceiptPage() {
                 >
                   <Upload className="w-10 h-10 text-primary" />
                   <span className="font-medium">Click to upload receipt</span>
-                  <span className="text-sm text-muted-foreground">PDF, JPG or PNG</span>
+                  <span className="text-sm text-muted-foreground">PDF, JPG or PNG — fields auto-filled by AI</span>
                 </button>
               ) : (
                 <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-muted/30">
-                  <FileText className="w-8 h-8 text-primary shrink-0" />
-                  <span className="flex-1 truncate text-sm text-foreground font-medium">{file.name}</span>
+                  {scanning ? (
+                    <Loader2 className="w-8 h-8 text-violet-500 shrink-0 animate-spin" />
+                  ) : (
+                    <FileText className="w-8 h-8 text-primary shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <span className="block truncate text-sm text-foreground font-medium">{file.name}</span>
+                    {scanning && (
+                      <span className="text-xs text-violet-500 flex items-center gap-1 mt-0.5">
+                        <Sparkles className="w-3 h-3" /> Reading receipt…
+                      </span>
+                    )}
+                    {!scanning && scanError && (
+                      <span className="text-xs text-muted-foreground mt-0.5">{scanError}</span>
+                    )}
+                    {!scanning && aiFields.size > 0 && (
+                      <span className="text-xs text-violet-500 flex items-center gap-1 mt-0.5">
+                        <Sparkles className="w-3 h-3" /> {aiFields.size} field{aiFields.size !== 1 ? "s" : ""} filled by AI — review below
+                      </span>
+                    )}
+                  </div>
                   <Button
                     type="button"
                     variant="ghost"
                     size="icon"
-                    onClick={() => setFile(null)}
+                    onClick={() => handleFileChange(null)}
                     className="shrink-0"
                     aria-label="Remove file"
                   >
@@ -168,11 +233,16 @@ export default function NewReceiptPage() {
             </div>
 
             <div>
-              <Label htmlFor="category">Category</Label>
+              <Label htmlFor="category">
+                Category{aiFields.has("category") && <AiBadge />}
+              </Label>
               <select
                 id="category"
                 value={category}
-                onChange={(e) => setCategory(e.target.value as ReceiptCategory)}
+                onChange={(e) => {
+                  setCategory(e.target.value as ReceiptCategory);
+                  setAiFields((f) => { const n = new Set(f); n.delete("category"); return n; });
+                }}
                 className="w-full mt-1 px-4 py-2 border border-input rounded-md bg-background text-foreground"
               >
                 {RECEIPT_CATEGORIES.map((c) => (
@@ -182,54 +252,78 @@ export default function NewReceiptPage() {
                 ))}
               </select>
             </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="amount">Amount ($)</Label>
+                <Label htmlFor="amount">
+                  Amount ($){aiFields.has("amount") && <AiBadge />}
+                </Label>
                 <Input
                   id="amount"
                   type="number"
                   step="0.01"
                   min="0"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    setAiFields((f) => { const n = new Set(f); n.delete("amount"); return n; });
+                  }}
                   required
                 />
               </div>
               <div>
-                <Label htmlFor="date">Date</Label>
+                <Label htmlFor="date">
+                  Date{aiFields.has("date") && <AiBadge />}
+                </Label>
                 <Input
                   id="date"
                   type="date"
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
+                  onChange={(e) => {
+                    setDate(e.target.value);
+                    setAiFields((f) => { const n = new Set(f); n.delete("date"); return n; });
+                  }}
                   required
                 />
               </div>
             </div>
+
             <div>
-              <Label htmlFor="vendor">Vendor</Label>
+              <Label htmlFor="vendor">
+                Vendor{aiFields.has("vendor") && <AiBadge />}
+              </Label>
               <Input
                 id="vendor"
                 value={vendor}
-                onChange={(e) => setVendor(e.target.value)}
+                onChange={(e) => {
+                  setVendor(e.target.value);
+                  setAiFields((f) => { const n = new Set(f); n.delete("vendor"); return n; });
+                }}
                 placeholder="e.g. Shell, Mobil"
               />
             </div>
+
             <div>
-              <Label htmlFor="notes">Notes</Label>
+              <Label htmlFor="notes">
+                Notes{aiFields.has("notes") && <AiBadge />}
+              </Label>
               <Input
                 id="notes"
                 value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                onChange={(e) => {
+                  setNotes(e.target.value);
+                  setAiFields((f) => { const n = new Set(f); n.delete("notes"); return n; });
+                }}
                 placeholder="Optional notes"
               />
             </div>
+
             {error && <p className="text-sm text-destructive">{error}</p>}
             <div className="flex gap-2">
               <Button type="button" variant="outline" onClick={() => router.back()}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={loading}>
+              <Button type="submit" disabled={loading || scanning}>
                 {loading ? "Saving…" : "Save Receipt"}
               </Button>
             </div>

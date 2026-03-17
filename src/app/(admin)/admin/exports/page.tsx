@@ -17,12 +17,12 @@ export default async function ExportsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-neutral-900">Export Data</h1>
+      <h1 className="text-2xl font-bold text-foreground">Export Data</h1>
       <Card>
         <CardHeader>
-          <h2 className="font-semibold">QuickBooks / Excel Export</h2>
+          <h2 className="font-semibold text-foreground">Accounting Exports</h2>
           <p className="text-sm text-muted-foreground">
-            Export receipts and maintenance records for accounting.
+            Export receipts and maintenance records. Use transactions + attachments for a ZIP with Excel and receipt PDFs named $[amount] [vendor].pdf.
           </p>
         </CardHeader>
         <CardContent>

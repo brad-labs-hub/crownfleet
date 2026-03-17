@@ -12,6 +12,8 @@ interface ExportButtonsProps {
     amount: number;
     date: string;
     vendor: string | null;
+    notes: string | null;
+    document_url: string | null;
     vehicle: { make: string; model: string; year: number } | null;
   }[];
   vehicles: { id: string; make: string; model: string; year: number }[];
@@ -31,7 +33,7 @@ export function ExportButtons({
 }: ExportButtonsProps) {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [loading, setLoading] = useState<"excel" | "qb" | null>(null);
+  const [loading, setLoading] = useState<"excel" | "qb" | "accountant" | null>(null);
 
   const filteredReceipts = receipts.filter((r) => {
     if (!startDate && !endDate) return true;
@@ -93,6 +95,35 @@ export function ExportButtons({
     }
   }
 
+  async function exportAccountant() {
+    setLoading("accountant");
+    try {
+      const res = await fetch("/api/export/accountant", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ startDate, endDate }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error ?? "Export failed");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `accountant-export-${new Date().toISOString().slice(0, 10)}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      console.error(e);
+      alert(e instanceof Error ? e.message : "Export failed");
+    } finally {
+      setLoading(null);
+    }
+  }
+
+  const withAttachments = filteredReceipts.filter((r) => r.document_url).length;
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -117,8 +148,9 @@ export function ExportButtons({
       </div>
       <p className="text-sm text-muted-foreground">
         {filteredReceipts.length} receipts in date range
+        {withAttachments > 0 && `, ${withAttachments} with attachments`}
       </p>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button
           onClick={exportExcel}
           disabled={loading !== null}
@@ -131,6 +163,15 @@ export function ExportButtons({
           disabled={loading !== null}
         >
           {loading === "qb" ? "Exporting..." : "Export to QuickBooks CSV"}
+        </Button>
+        <Button
+          variant="outline"
+          onClick={exportAccountant}
+          disabled={loading !== null}
+        >
+          {loading === "accountant"
+            ? "Exporting..."
+            : "Export transactions + attachments (ZIP)"}
         </Button>
       </div>
     </div>

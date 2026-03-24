@@ -6,9 +6,8 @@ import { Cloud, FileSpreadsheet } from "lucide-react";
 
 function getAuthUrls() {
   if (typeof window === "undefined") return { oneDrive: "", google: "" };
-  const origin = window.location.origin;
-  const oneDrive = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${process.env.NEXT_PUBLIC_ONEDRIVE_CLIENT_ID ?? ""}&response_type=code&redirect_uri=${origin}/api/auth/onedrive/callback&scope=Files.Read%20offline_access`;
-  const google = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ?? ""}&redirect_uri=${origin}/api/auth/google/callback&response_type=code&scope=https://www.googleapis.com/auth/drive.readonly`;
+  const oneDrive = "/api/auth/onedrive/start";
+  const google = "/api/auth/google/start";
   return { oneDrive, google };
 }
 

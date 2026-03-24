@@ -1,8 +1,19 @@
 import { NextResponse } from "next/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
+import { checkRateLimit, getRequestContext, logApiEvent } from "@/lib/api-ops";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
+  const { requestId, ip } = getRequestContext(request);
+  const limiter = checkRateLimit({
+    key: `admin-invite-post:${ip}`,
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!limiter.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded", requestId }, { status: 429 });
+  }
+
   // Verify the caller is an authenticated controller
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -56,10 +67,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: profileError.message }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, userId: inviteData.user.id });
+  logApiEvent("info", "/api/admin/invite-user:POST", requestId, { ip, status: 200 });
+  return NextResponse.json({ success: true, userId: inviteData.user.id, requestId });
 }
 
 export async function DELETE(request: Request) {
+  const { requestId, ip } = getRequestContext(request);
+  const limiter = checkRateLimit({
+    key: `admin-invite-delete:${ip}`,
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!limiter.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded", requestId }, { status: 429 });
+  }
+
   // Delete (revoke) a user — controller only
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -86,10 +108,21 @@ export async function DELETE(request: Request) {
   const { error } = await admin.auth.admin.deleteUser(userId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ success: true });
+  logApiEvent("info", "/api/admin/invite-user:DELETE", requestId, { ip, status: 200 });
+  return NextResponse.json({ success: true, requestId });
 }
 
 export async function PATCH(request: Request) {
+  const { requestId, ip } = getRequestContext(request);
+  const limiter = checkRateLimit({
+    key: `admin-invite-patch:${ip}`,
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!limiter.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded", requestId }, { status: 429 });
+  }
+
   // Update a user's role — controller only
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -108,5 +141,6 @@ export async function PATCH(request: Request) {
     .from("user_profiles").update({ role }).eq("id", userId);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ success: true });
+  logApiEvent("info", "/api/admin/invite-user:PATCH", requestId, { ip, status: 200 });
+  return NextResponse.json({ success: true, requestId });
 }

@@ -85,3 +85,75 @@ For "Forgot password?" to work, add your app URL to Supabase redirect URLs:
 - **driver**: Add receipts, log maintenance, request cars. Sees vehicles at assigned locations.
 - **employee**: Same as driver + approve car requests, full read access.
 - **controller**: Full access, exports, imports, user management.
+
+## Production Readiness (Vercel Essentials)
+
+### Deploy Checklist
+
+1. Set production env vars in Vercel:
+   - Supabase: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
+   - App URL: `NEXT_PUBLIC_APP_URL`
+   - Integrations: `ANTHROPIC_API_KEY`, optional OneDrive/Google OAuth keys
+   - Ops: optional `HEALTHCHECK_TOKEN`, optional `ALERT_WEBHOOK_URL`
+2. Ensure Supabase redirect URLs include production callback routes:
+   - `/api/auth/google/callback`
+   - `/api/auth/onedrive/callback`
+   - `/auth/callback` and `/reset-password`
+3. Apply database migrations before release:
+   ```bash
+   npm run db:push
+   ```
+4. Confirm CI passes (`lint`, `typecheck`, `test`) before shipping.
+
+### Security and Auth Notes
+
+- OAuth connects now start from server endpoints:
+  - `/api/auth/google/start`
+  - `/api/auth/onedrive/start`
+- OAuth callbacks validate `state` and no longer return access tokens in URL params.
+- Receipts storage bucket is hardened to private access by migration and read access stays behind authenticated policies.
+
+### Health and Alerting
+
+- Health endpoint: `GET /api/health`
+  - Returns `200` when app + Supabase are healthy.
+  - Returns `503` with `status: degraded` if Supabase connectivity/config fails.
+- If `ALERT_WEBHOOK_URL` is set, degraded checks send a webhook alert payload.
+- Vercel Cron is configured to hit `/api/health` every 10 minutes.
+
+### Reliability Guardrails
+
+- Sensitive mutation routes and receipt scanning have app-level rate limiting.
+- API responses on key admin routes include request IDs for easier issue tracking.
+- Server routes emit structured JSON logs for high-value actions and failures.
+
+### Backup and Restore
+
+For a 5-user production setup, target:
+- **RPO**: 24 hours (at most 1 day of potential data loss)
+- **RTO**: 4 hours (time to recover service)
+
+Suggested operating cadence:
+1. Daily managed Supabase backup (project setting).
+2. Weekly restore verification to a non-production Supabase project.
+3. Monthly migration rollback rehearsal for the latest migration batch.
+
+Restore verification runbook:
+1. Create/refresh a staging Supabase project.
+2. Restore latest backup into staging.
+3. Run app smoke checks:
+   - Sign in
+   - Load admin vehicles list
+   - Create one test receipt
+   - Export one report
+4. Record restore duration and failures in an ops log.
+
+### Rollback Procedure
+
+1. In Vercel, roll back to the previous successful deployment.
+2. If migration-related, run Supabase migration repair only if needed and reviewed:
+   - Check status:
+     ```bash
+     npm run db:status
+     ```
+3. Re-run smoke checks and monitor `/api/health`.

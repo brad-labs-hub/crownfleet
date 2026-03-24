@@ -1,8 +1,19 @@
 import { NextResponse } from "next/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
+import { checkRateLimit, getRequestContext, logApiEvent } from "@/lib/api-ops";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
+  const { requestId, ip } = getRequestContext(request);
+  const limiter = checkRateLimit({
+    key: `admin-reinvite:${ip}`,
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!limiter.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded", requestId }, { status: 429 });
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -62,6 +73,7 @@ export async function POST(request: Request) {
         success: true,
         message: "User already exists. Magic link generated.",
         link: linkData.properties?.action_link,
+        requestId,
       });
     }
     return NextResponse.json({ error: inviteError.message }, { status: 400 });
@@ -74,5 +86,6 @@ export async function POST(request: Request) {
     role: targetProfile.role,
   });
 
-  return NextResponse.json({ success: true, userId: inviteData.user.id });
+  logApiEvent("info", "/api/admin/reinvite-user", requestId, { ip, status: 200, userId });
+  return NextResponse.json({ success: true, userId: inviteData.user.id, requestId });
 }

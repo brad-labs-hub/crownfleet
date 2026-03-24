@@ -1,8 +1,19 @@
 import { NextResponse } from "next/server";
 import { createClient as createSupabaseAdmin } from "@supabase/supabase-js";
+import { checkRateLimit, getRequestContext, logApiEvent } from "@/lib/api-ops";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
+  const { requestId, ip } = getRequestContext(request);
+  const limiter = checkRateLimit({
+    key: `admin-reset-mfa:${ip}`,
+    limit: 20,
+    windowMs: 60_000,
+  });
+  if (!limiter.allowed) {
+    return NextResponse.json({ error: "Rate limit exceeded", requestId }, { status: 429 });
+  }
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -40,11 +51,13 @@ export async function POST(request: Request) {
     if (deleteError) return NextResponse.json({ error: deleteError.message }, { status: 500 });
   }
 
+  logApiEvent("info", "/api/admin/reset-mfa", requestId, { ip, status: 200, userId });
   return NextResponse.json({
     success: true,
     removed: totpFactors.length,
     message: totpFactors.length > 0
       ? "MFA factors removed. User will need to set up MFA again on next login."
       : "No MFA factors were enrolled.",
+    requestId,
   });
 }

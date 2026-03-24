@@ -1,6 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { ImageBlockParam, TextBlockParam } from "@anthropic-ai/sdk/resources/messages";
 import { NextRequest, NextResponse } from "next/server";
+import { checkRateLimit, getRequestContext, logApiEvent } from "@/lib/api-ops";
 import { RECEIPT_CATEGORIES, type ReceiptCategory } from "@/types/database";
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
@@ -30,6 +31,19 @@ function isValidImageType(type: string): type is ValidImageType {
 }
 
 export async function POST(req: NextRequest) {
+  const { requestId, ip } = getRequestContext(req);
+  const limiter = checkRateLimit({
+    key: `receipts-scan:${ip}`,
+    limit: 10,
+    windowMs: 60_000,
+  });
+  if (!limiter.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded. Try again in a minute.", requestId },
+      { status: 429 }
+    );
+  }
+
   if (!process.env.ANTHROPIC_API_KEY) {
     return NextResponse.json({ error: "ANTHROPIC_API_KEY not configured" }, { status: 500 });
   }
@@ -129,11 +143,16 @@ export async function POST(req: NextRequest) {
       notes: typeof parsed.notes === "string" && parsed.notes ? parsed.notes : null,
     };
 
+    logApiEvent("info", "/api/receipts/scan", requestId, { ip, status: 200 });
     return NextResponse.json(result);
   } catch (err: unknown) {
-    console.error("Receipt scan error:", err);
+    logApiEvent("error", "/api/receipts/scan", requestId, {
+      ip,
+      status: 500,
+      error: err instanceof Error ? err.message : "Scan failed",
+    });
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Scan failed" },
+      { error: err instanceof Error ? err.message : "Scan failed", requestId },
       { status: 500 }
     );
   }

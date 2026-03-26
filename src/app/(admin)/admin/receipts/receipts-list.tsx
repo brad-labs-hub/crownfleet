@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ExternalLink } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -129,8 +130,8 @@ export function ReceiptsList({
       <div className="space-y-3">
         {filtered.map((r) => (
           <Card key={r.id}>
-            <CardContent className="p-4 flex flex-wrap justify-between items-center gap-4">
-              <div>
+            <CardContent className="p-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+              <div className="min-w-0 flex-1">
                 <p className="font-medium text-foreground capitalize">
                   {r.category?.replace("_", " ")}
                 </p>
@@ -155,34 +156,38 @@ export function ReceiptsList({
                   </p>
                 )}
               </div>
-              <div className="flex items-center gap-2">
-                <span className="font-semibold text-foreground">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6 sm:shrink-0 sm:border-l sm:border-border sm:pl-6">
+                <p className="font-semibold text-foreground tabular-nums text-right text-lg sm:text-base sm:min-w-[6.5rem] sm:pt-0">
                   {formatCurrency(Number(r.amount))}
-                </span>
-                {r.document_url && (
-                  <a
-                    href={r.document_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-muted-foreground hover:text-foreground"
-                  >
-                    View doc
-                  </a>
-                )}
-                <Link href={`/admin/receipts/${r.id}/edit`}>
-                  <Button variant="outline" size="sm">
-                    Edit
-                  </Button>
-                </Link>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  onClick={() => handleDelete(r)}
-                  disabled={deletingId === r.id}
+                </p>
+                <div
+                  className="flex flex-wrap items-center justify-end gap-2 sm:justify-start"
+                  role="group"
+                  aria-label="Receipt actions"
                 >
-                  {deletingId === r.id ? "Deleting…" : "Delete"}
-                </Button>
+                  {r.document_url && (
+                    <Button variant="outline" size="sm" className="gap-1.5" asChild>
+                      <a href={r.document_url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                        Document
+                      </a>
+                    </Button>
+                  )}
+                  <Link href={`/admin/receipts/${r.id}/edit`} className="cursor-pointer">
+                    <Button variant="outline" size="sm">
+                      Edit
+                    </Button>
+                  </Link>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    onClick={() => handleDelete(r)}
+                    disabled={deletingId === r.id}
+                  >
+                    {deletingId === r.id ? "Deleting…" : "Delete"}
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>

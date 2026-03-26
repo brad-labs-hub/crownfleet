@@ -1,10 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import Link from "next/link";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import {
-  Car, Receipt, AlertTriangle, Shield,
-  Plus, ClipboardList, ArrowRight,
-} from "lucide-react";
+import { Car, Receipt, Plus, ArrowRight } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -42,34 +39,14 @@ export default async function AdminDashboardPage() {
   const { data: receiptSum } = await supabase.from("receipts").select("amount").gte("date", ytdStart);
   const totalReceipts = receiptSum?.reduce((s, r) => s + Number(r.amount), 0) ?? 0;
 
-  const in90Days = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const today = new Date().toISOString().slice(0, 10);
+  const [allReceiptsRes, vehiclesForChartsRes, recentReceiptsRes, maintenanceYtdRes] =
+    await Promise.all([
+      supabase.from("receipts").select("amount, category, date, vehicle_id").gte("date", ytdStart),
+      supabase.from("vehicles").select("id, make, model, year"),
+      supabase.from("receipts").select("id, amount, category, date, vendor").order("created_at", { ascending: false }).limit(5),
+      supabase.from("maintenance_records").select("vehicle_id, cost").gte("date", ytdStart),
+    ]);
 
-  const [
-    insuranceCountRes,
-    maintenanceAlertsCountRes,
-    allReceiptsRes,
-    vehiclesForChartsRes,
-    recentReceiptsRes,
-    maintenanceYtdRes,
-  ] = await Promise.all([
-    supabase
-      .from("insurance")
-      .select("*", { count: "exact", head: true })
-      .lte("expiry_date", in90Days)
-      .gte("expiry_date", today),
-    supabase
-      .from("maintenance_alerts")
-      .select("*", { count: "exact", head: true })
-      .eq("dismissed", false),
-    supabase.from("receipts").select("amount, category, date, vehicle_id").gte("date", ytdStart),
-    supabase.from("vehicles").select("id, make, model, year"),
-    supabase.from("receipts").select("id, amount, category, date, vendor").order("created_at", { ascending: false }).limit(5),
-    supabase.from("maintenance_records").select("vehicle_id, cost").gte("date", ytdStart),
-  ]);
-
-  const expiringInsuranceCount = insuranceCountRes.count ?? 0;
-  const maintenanceAlertsCount = maintenanceAlertsCountRes.count ?? 0;
   const allReceipts = allReceiptsRes.data ?? [];
 
   // Analytics
@@ -203,7 +180,7 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      {/* ── KPIs: 21st.dev ActivityChartCard + matching stat tiles ───────── */}
+      {/* ── KPIs: fleet size + spend (alerts in header bell) ─────────────── */}
       <div className="grid gap-4 md:grid-cols-2">
         <DashboardStatCard
           title="Vehicles"
@@ -236,82 +213,9 @@ export default async function AdminDashboardPage() {
             className="h-full"
           />
         </Link>
-        <DashboardStatCard
-          title="Alerts"
-          value={maintenanceAlertsCount}
-          description={maintenanceAlertsCount === 0 ? "All clear" : "Open maintenance items"}
-          href="/admin/vehicles"
-          animateClassName="animate-fade-up delay-3"
-          iconWrapperClassName={
-            maintenanceAlertsCount > 0 ? "bg-[var(--amber-dim)]" : "bg-muted"
-          }
-          icon={
-            <AlertTriangle
-              className="h-4 w-4"
-              style={{
-                color:
-                  maintenanceAlertsCount > 0
-                    ? "var(--amber)"
-                    : "var(--muted-foreground)",
-              }}
-              aria-hidden
-            />
-          }
-        />
-        <DashboardStatCard
-          title="Insurance"
-          value={expiringInsuranceCount}
-          description={
-            expiringInsuranceCount === 0
-              ? "All current"
-              : "Expiring in 90 days"
-          }
-          animateClassName="animate-fade-up delay-4"
-          iconWrapperClassName={
-            expiringInsuranceCount > 0 ? "bg-[var(--rose-dim)]" : "bg-muted"
-          }
-          icon={
-            <Shield
-              className="h-4 w-4"
-              style={{
-                color:
-                  expiringInsuranceCount > 0
-                    ? "var(--rose)"
-                    : "var(--muted-foreground)",
-              }}
-              aria-hidden
-            />
-          }
-        />
       </div>
 
-      {/* ── Quick actions ──────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3 animate-fade-up delay-3">
-        <Link
-          href="/admin/receipts/new"
-          className="block rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        >
-          <div className="rounded-2xl p-4 flex items-center gap-3 cursor-pointer transition-shadow duration-200 bg-gradient-to-br from-indigo-500 to-violet-600 shadow-indigo-sm hover:shadow-indigo group">
-            <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
-              <Receipt className="h-4 w-4 text-white" />
-            </div>
-            <p className="text-sm font-semibold text-white">New Receipt</p>
-          </div>
-        </Link>
-        <Link
-          href="/admin/requests"
-          className="block rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-        >
-          <div className="rounded-2xl p-4 flex items-center gap-3 cursor-pointer bg-card border border-border shadow-sm hover:shadow-md hover:border-[var(--border-hi)] transition-shadow duration-200">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: "rgba(124,58,237,0.12)" }}>
-              <ClipboardList className="h-4 w-4 text-violet-400" />
-            </div>
-            <p className="text-sm font-semibold text-foreground">Requests</p>
-          </div>
-        </Link>
-      </div>
-
-      {/* ── Recent receipts (insurance & maintenance → header bell) ── */}
+      {/* ── Recent receipts (alerts → header bell) ── */}
       <div className="max-w-2xl">
         <Card className="shadow-sm transition-shadow duration-200 hover:shadow-md">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">

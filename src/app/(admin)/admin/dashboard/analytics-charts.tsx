@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -33,6 +33,32 @@ function formatAxisSpend(v: unknown): string {
     return t % 1 === 0 ? `$${t}k` : `$${t.toFixed(1)}k`;
   }
   return `$${Math.round(k)}k`;
+}
+
+/** Recharts 3 vertical bar charts can yield all-zero X ticks without an explicit domain + ticks. */
+function niceTickStep(rough: number): number {
+  if (!Number.isFinite(rough) || rough <= 0) return 1;
+  const exp = Math.floor(Math.log10(rough));
+  const f = rough / 10 ** exp;
+  const nf = f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10;
+  return nf * 10 ** exp;
+}
+
+function buildSpendAxisFromMax(dataMax: number, tickTarget = 5): { domainMax: number; ticks: number[] } {
+  const max = Math.max(0, Number(dataMax) || 0);
+  const ceiling = max <= 0 ? 100 : max * 1.12;
+  const step = niceTickStep(ceiling / Math.max(tickTarget - 1, 1));
+  const ticks: number[] = [0];
+  for (let v = step; v <= ceiling + step * 1e-9; v += step) {
+    ticks.push(Math.round(v * 100) / 100);
+    if (ticks.length > 14) break;
+  }
+  let domainMax = ticks[ticks.length - 1] ?? ceiling;
+  if (domainMax < ceiling) {
+    domainMax = Math.ceil(ceiling / step) * step;
+    if (ticks[ticks.length - 1] !== domainMax) ticks.push(domainMax);
+  }
+  return { domainMax, ticks: Array.from(new Set(ticks)).sort((a, b) => a - b) };
 }
 
 /** Card-style tooltip for spend-by-category (readable in light and dark). */
@@ -131,13 +157,26 @@ export function SpendByCategoryChart({ data }: { data: CategoryData[] }) {
 
 export function MonthlySpendChart({ data }: { data: MonthlyData[] }) {
   const reducedMotion = usePrefersReducedMotion();
+  const maxSpend = useMemo(
+    () => Math.max(0, ...data.map((d) => Number(d.total) || 0)),
+    [data]
+  );
+  const { domainMax: yMax, ticks: yTicks } = useMemo(
+    () => buildSpendAxisFromMax(maxSpend),
+    [maxSpend]
+  );
   if (!data.length) return <p className="text-muted-foreground text-sm">No data</p>;
   return (
     <ResponsiveContainer width="100%" height={220}>
       <BarChart data={data} margin={{ top: 4, right: 8, left: 8, bottom: 4 }}>
         <CartesianGrid strokeDasharray="3 3" />
         <XAxis dataKey="month" tick={{ fontSize: 11 }} />
-        <YAxis tickFormatter={formatAxisSpend} tick={{ fontSize: 11 }} />
+        <YAxis
+          domain={[0, yMax]}
+          ticks={yTicks}
+          tickFormatter={formatAxisSpend}
+          tick={{ fontSize: 11 }}
+        />
         <Tooltip formatter={(value) => formatCurrency(Number(value))} />
         <Bar
           dataKey="total"
@@ -153,12 +192,26 @@ export function MonthlySpendChart({ data }: { data: MonthlyData[] }) {
 
 export function PerVehicleChart({ data }: { data: VehicleData[] }) {
   const reducedMotion = usePrefersReducedMotion();
+  const maxSpend = useMemo(
+    () => Math.max(0, ...data.map((d) => Number(d.total) || 0)),
+    [data]
+  );
+  const { domainMax: xMax, ticks: xTicks } = useMemo(
+    () => buildSpendAxisFromMax(maxSpend),
+    [maxSpend]
+  );
   if (!data.length) return <p className="text-muted-foreground text-sm">No data</p>;
   return (
     <ResponsiveContainer width="100%" height={Math.max(data.length * 36 + 20, 120)}>
       <BarChart data={data} layout="vertical" margin={{ top: 4, right: 80, left: 8, bottom: 4 }}>
         <CartesianGrid strokeDasharray="3 3" horizontal={false} />
-        <XAxis type="number" tickFormatter={formatAxisSpend} tick={{ fontSize: 11 }} />
+        <XAxis
+          type="number"
+          domain={[0, xMax]}
+          ticks={xTicks}
+          tickFormatter={formatAxisSpend}
+          tick={{ fontSize: 11 }}
+        />
         <YAxis type="category" dataKey="name" width={150} tick={{ fontSize: 11 }} />
         <Tooltip formatter={(value) => formatCurrency(Number(value))} />
         <Bar

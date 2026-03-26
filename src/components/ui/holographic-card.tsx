@@ -54,7 +54,8 @@ export function HolographicCard({
       card.style.setProperty("--y", `${y}px`);
       card.style.setProperty("--bg-x", `${(x / rect.width) * 100}%`);
       card.style.setProperty("--bg-y", `${(y / rect.height) * 100}%`);
-      card.style.transform = `perspective(920px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.01, 1.01, 1)`;
+      const tf = `perspective(920px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.008, 1.008, 1)`;
+      card.style.transform = tf;
     },
     [enableTilt]
   );
@@ -74,7 +75,7 @@ export function HolographicCard({
     <div
       ref={cardRef}
       className={cn(
-        "group holographic-card border border-border bg-card text-card-foreground shadow-sm transition-shadow duration-200",
+        "group holographic-card border border-border text-card-foreground shadow-sm transition-shadow duration-200",
         enableTilt && "cursor-pointer hover:shadow-lg hover:border-primary/35",
         reducedMotion && "holographic-card--static",
         className
@@ -82,10 +83,16 @@ export function HolographicCard({
       onMouseMove={enableTilt ? handleMouseMove : undefined}
       onMouseLeave={enableTilt ? handleMouseLeave : undefined}
     >
-      <div className={cn("relative z-10 holo-content", contentClassName)}>
+      <div className={cn("relative z-[1] holo-content", contentClassName)}>
         {children}
       </div>
-      {enableTilt ? <div className="holo-glow pointer-events-none" aria-hidden /> : null}
+      <div
+        className={cn(
+          "holo-glow pointer-events-none",
+          !enableTilt && "holo-glow--static"
+        )}
+        aria-hidden
+      />
     </div>
   );
 }

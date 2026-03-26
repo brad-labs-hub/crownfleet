@@ -13,6 +13,8 @@
   --foreground:           #0f0f1a;
   --card:                 #ffffff;
   --card-foreground:      #0f0f1a;
+  --popover:              #ffffff;
+  --popover-foreground:   #0f0f1a;
   --primary:              #6366f1;
   --primary-foreground:   #ffffff;
   --secondary:            #ededf5;
@@ -53,6 +55,8 @@
   --foreground:           #f8fafc;
   --card:                 #10101c;
   --card-foreground:      #f8fafc;
+  --popover:              #16162a;
+  --popover-foreground:   #f8fafc;
   --primary:              #6366f1;
   --primary-foreground:   #ffffff;
   --secondary:            #16162a;

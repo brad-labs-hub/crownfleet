@@ -20,6 +20,53 @@ function formatCategory(cat: string) {
   return cat.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
+/** Card-style tooltip for spend-by-category (readable in light and dark). */
+function SpendCategoryTooltipContent({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: ReadonlyArray<{ name?: string; value?: number }>;
+}) {
+  if (!active || !payload?.length) return null;
+  const row = payload[0];
+  const label = row.name != null ? formatCategory(String(row.name)) : "—";
+  return (
+    <div className="rounded-lg border border-border bg-card px-3 py-2 text-sm shadow-md">
+      <p className="font-medium text-foreground">{label}</p>
+      <p className="mt-0.5 tabular-nums text-muted-foreground">
+        {formatCurrency(Number(row.value))}
+      </p>
+    </div>
+  );
+}
+
+type LegendPayloadEntry = { value?: string | number; color?: string };
+
+/** Legend with neutral text + swatches (avoids low-contrast colored labels on dark cards). */
+function SpendCategoryLegend({ payload }: { payload?: ReadonlyArray<LegendPayloadEntry> }) {
+  if (!payload?.length) return null;
+  return (
+    <ul className="mt-5 flex flex-wrap justify-center gap-x-5 gap-y-2.5 px-1">
+      {payload.map((entry) => (
+        <li
+          key={String(entry.value)}
+          className="flex max-w-[11rem] items-center gap-2 text-xs text-muted-foreground"
+        >
+          <span
+            className="size-2.5 shrink-0 rounded-sm ring-1 ring-border/70"
+            style={{ backgroundColor: entry.color }}
+            aria-hidden
+          />
+          <span className="truncate font-medium text-foreground/85">
+            {formatCategory(String(entry.value))}
+          </span>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 function usePrefersReducedMotion(): boolean {
   const [reduced, setReduced] = useState(false);
   useEffect(() => {
@@ -36,27 +83,32 @@ export function SpendByCategoryChart({ data }: { data: CategoryData[] }) {
   const reducedMotion = usePrefersReducedMotion();
   if (!data.length) return <p className="text-muted-foreground text-sm">No data</p>;
   return (
-    <ResponsiveContainer width="100%" height={260}>
-      <PieChart>
+    <ResponsiveContainer width="100%" height={300}>
+      <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
         <Pie
           data={data}
           dataKey="total"
           nameKey="category"
           cx="50%"
-          cy="50%"
-          outerRadius={80}
+          cy="46%"
+          innerRadius={54}
+          outerRadius={92}
+          paddingAngle={2}
+          cornerRadius={4}
           isAnimationActive={!reducedMotion}
           animationDuration={reducedMotion ? 0 : 450}
         >
           {data.map((_, i) => (
-            <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+            <Cell
+              key={i}
+              fill={PIE_COLORS[i % PIE_COLORS.length]}
+              stroke="var(--border)"
+              strokeWidth={2}
+            />
           ))}
         </Pie>
-        <Tooltip
-          formatter={(value) => formatCurrency(Number(value))}
-          labelFormatter={(label) => formatCategory(String(label))}
-        />
-        <Legend formatter={(value) => formatCategory(String(value))} />
+        <Tooltip content={<SpendCategoryTooltipContent />} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
+        <Legend content={<SpendCategoryLegend />} verticalAlign="bottom" />
       </PieChart>
     </ResponsiveContainer>
   );

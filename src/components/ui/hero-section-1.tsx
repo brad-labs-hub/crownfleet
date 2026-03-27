@@ -3,7 +3,7 @@
 import React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, ChevronRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AnimatedGroup } from "@/components/ui/animated-group";
 import { cn } from "@/lib/utils";
@@ -184,93 +184,33 @@ export function HeroSection() {
           </div>
         </section>
         <section className="bg-background pb-16 pt-16 md:pb-32">
-          <div className="group relative m-auto max-w-5xl px-6">
-            <div className="absolute inset-0 z-10 flex scale-95 items-center justify-center opacity-0 duration-500 group-hover:scale-100 group-hover:opacity-100">
-              <Link href="/login" className="block text-sm duration-150 hover:opacity-75">
-                <span>Sign in</span>
-                <ChevronRight className="ml-1 inline-block size-3" />
-              </Link>
-            </div>
-            <div className="mx-auto mt-12 grid max-w-2xl grid-cols-4 gap-x-12 gap-y-8 transition-all duration-500 group-hover:opacity-50 group-hover:blur-sm sm:gap-x-16 sm:gap-y-14">
-              <div className="flex">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className="mx-auto h-5 w-auto dark:invert"
-                  src="https://html.tailus.io/blocks/customers/nvidia.svg"
-                  alt="Nvidia"
-                  height={20}
-                  width={80}
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="relative overflow-hidden rounded-3xl border border-border bg-background p-3 shadow-lg shadow-zinc-950/10 ring-1 ring-border md:p-5 dark:shadow-zinc-950/20">
+              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl">
+                <Image
+                  src="/images/dashboard-preview.png"
+                  alt="Fleet Manager dashboard preview"
+                  fill
+                  className="object-cover object-top"
+                  sizes="(max-width: 1280px) 100vw, 1280px"
                 />
-              </div>
-              <div className="flex">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className="mx-auto h-4 w-auto dark:invert"
-                  src="https://html.tailus.io/blocks/customers/column.svg"
-                  alt="Column"
-                  height={16}
-                  width={80}
+                <div
+                  aria-hidden
+                  className="absolute inset-0 bg-background/10 backdrop-blur-[3px] md:backdrop-blur-[4px]"
                 />
-              </div>
-              <div className="flex">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className="mx-auto h-4 w-auto dark:invert"
-                  src="https://html.tailus.io/blocks/customers/github.svg"
-                  alt="GitHub"
-                  height={16}
-                  width={80}
+                <div
+                  aria-hidden
+                  className="absolute inset-0 bg-gradient-to-b from-background/0 via-background/5 to-background/75"
                 />
-              </div>
-              <div className="flex">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className="mx-auto h-5 w-auto dark:invert"
-                  src="https://html.tailus.io/blocks/customers/nike.svg"
-                  alt="Nike"
-                  height={20}
-                  width={80}
+                <div
+                  aria-hidden
+                  className="absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-background to-transparent"
                 />
-              </div>
-              <div className="flex">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className="mx-auto h-5 w-auto dark:invert"
-                  src="https://html.tailus.io/blocks/customers/lemonsqueezy.svg"
-                  alt="Lemon Squeezy"
-                  height={20}
-                  width={100}
-                />
-              </div>
-              <div className="flex">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className="mx-auto h-4 w-auto dark:invert"
-                  src="https://html.tailus.io/blocks/customers/laravel.svg"
-                  alt="Laravel"
-                  height={16}
-                  width={80}
-                />
-              </div>
-              <div className="flex">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className="mx-auto h-7 w-auto dark:invert"
-                  src="https://html.tailus.io/blocks/customers/lilly.svg"
-                  alt="Lilly"
-                  height={28}
-                  width={80}
-                />
-              </div>
-              <div className="flex">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  className="mx-auto h-6 w-auto dark:invert"
-                  src="https://html.tailus.io/blocks/customers/openai.svg"
-                  alt="OpenAI"
-                  height={24}
-                  width={80}
-                />
+                <div className="absolute inset-0 flex items-center justify-center p-4">
+                  <Button asChild size="lg" className="rounded-xl px-6 text-sm md:px-8 md:text-base">
+                    <Link href="/login">Sign in to view full dashboard</Link>
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

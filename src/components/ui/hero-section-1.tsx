@@ -143,44 +143,6 @@ export function HeroSection() {
               </div>
             </div>
 
-            <AnimatedGroup
-              variants={{
-                container: {
-                  visible: {
-                    transition: {
-                      staggerChildren: 0.05,
-                      delayChildren: 0.75,
-                    },
-                  },
-                },
-                ...transitionVariants,
-              }}
-            >
-              <div className="relative -mr-56 mt-8 overflow-hidden px-2 sm:mr-0 sm:mt-12 md:mt-20">
-                <div
-                  aria-hidden
-                  className="absolute inset-0 z-10 bg-gradient-to-b from-transparent from-35% to-background"
-                />
-                <div className="relative mx-auto max-w-6xl overflow-hidden rounded-2xl border border-border bg-background p-4 shadow-lg shadow-zinc-950/15 ring-1 ring-border dark:shadow-zinc-950/25">
-                  <div className="relative aspect-[15/8] w-full">
-                    <Image
-                      src="https://tailark.com/_next/image?url=%2Fmail2.png&w=3840&q=75"
-                      alt="App preview (dark)"
-                      fill
-                      className="relative hidden rounded-2xl object-cover dark:block"
-                      sizes="(max-width: 1152px) 100vw, 1152px"
-                    />
-                    <Image
-                      src="https://tailark.com/_next/image?url=%2Fmail2-light.png&w=3840&q=75"
-                      alt="App preview (light)"
-                      fill
-                      className="relative rounded-2xl border border-border/25 object-cover dark:hidden"
-                      sizes="(max-width: 1152px) 100vw, 1152px"
-                    />
-                  </div>
-                </div>
-              </div>
-            </AnimatedGroup>
           </div>
         </section>
         <section className="bg-background pb-16 pt-16 md:pb-32">

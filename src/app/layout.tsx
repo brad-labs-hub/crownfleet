@@ -17,7 +17,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Fleet Manager",
+  title: "Crownfleet",
   description: "Manage your family fleet of vehicles",
 };
 

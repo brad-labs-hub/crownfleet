@@ -123,7 +123,7 @@ export default async function AdminLayout({
                 <span className="text-white text-xs font-bold font-syne tracking-wide">FM</span>
               </div>
               <div className="hidden sm:block">
-                <div className="text-sm font-bold font-syne text-foreground leading-none">Fleet Manager</div>
+                <div className="text-sm font-bold font-syne text-foreground leading-none">Crownfleet</div>
                 <div className="text-[10px] text-muted-foreground mt-0.5 font-medium tracking-wide uppercase">Admin</div>
               </div>
             </Link>

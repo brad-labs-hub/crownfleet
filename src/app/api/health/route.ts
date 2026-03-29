@@ -9,7 +9,7 @@ async function sendHealthAlert(message: string) {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        source: "fleetmanager-health",
+        source: "crownfleet-health",
         severity: "error",
         message,
         timestamp: new Date().toISOString(),

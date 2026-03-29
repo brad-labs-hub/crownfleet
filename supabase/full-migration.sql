@@ -1,4 +1,4 @@
--- Fleet Manager - Full Database Setup
+-- Crownfleet - Full Database Setup
 -- Run this in Supabase Dashboard → SQL Editor → New Query
 
 -- 1. Schema

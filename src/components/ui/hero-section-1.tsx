@@ -126,7 +126,7 @@ export function HeroSection() {
                     <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl">
                       <Image
                         src="/images/dashboard-preview.png"
-                        alt="Fleet Manager dashboard preview"
+                        alt="Crownfleet dashboard preview"
                         fill
                         className="object-cover object-top"
                         sizes="(max-width: 1024px) 100vw, 720px"
@@ -182,7 +182,7 @@ function HeroHeader() {
           )}
         >
           <div className="flex items-center justify-between gap-4 py-3 lg:py-4">
-            <Link href="/" aria-label="Fleet Manager home" className="flex items-center space-x-2">
+            <Link href="/" aria-label="Crownfleet home" className="flex items-center space-x-2">
               <Logo />
             </Link>
             <Button asChild variant={isScrolled ? "default" : "outline"} size="sm" className="shrink-0">

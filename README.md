@@ -1,4 +1,4 @@
-# Fleet Manager
+# Crownfleet
 
 A full-stack fleet management application for high net worth families. Manage vehicles, maintenance records, receipts, insurance, registrations, key inventory, tire pressure, and more.
 

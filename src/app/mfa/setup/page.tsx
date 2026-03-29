@@ -39,8 +39,8 @@ export default function MFASetupPage() {
       // Enroll TOTP factor
       const { data: enrollData, error: enrollErr } = await supabase.auth.mfa.enroll({
         factorType: "totp",
-        issuer: "Fleet Manager",
-        friendlyName: "Fleet Manager",
+        issuer: "Crownfleet",
+        friendlyName: "Crownfleet",
       });
       if (enrollErr) throw enrollErr;
 

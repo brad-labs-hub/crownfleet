@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
     const usedNames = new Set<string>();
 
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = "Fleet Manager";
+    workbook.creator = "Crownfleet";
     const sheet = workbook.addWorksheet("Receipts");
     sheet.columns = [
       { header: "Date", key: "date", width: 12 },

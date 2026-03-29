@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
     } = body;
 
     const workbook = new ExcelJS.Workbook();
-    workbook.creator = "Fleet Manager";
+    workbook.creator = "Crownfleet";
 
     const summarySheet = workbook.addWorksheet("Summary");
     summarySheet.columns = [

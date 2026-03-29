@@ -81,7 +81,7 @@ export default function MFAVerifyPage() {
           </div>
           <h1 className="text-2xl font-bold font-syne text-foreground">Verification required</h1>
           <p className="text-sm text-muted-foreground mt-2">
-            Open your authenticator app and enter the 6-digit code for Fleet Manager.
+            Open your authenticator app and enter the 6-digit code for Crownfleet.
           </p>
         </div>
 

@@ -41,7 +41,7 @@ export default async function DriverLayout({
             <div className="h-7 w-7 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-indigo-sm shrink-0">
               <span className="text-white text-[10px] font-bold tracking-wide">FM</span>
             </div>
-            <span className="font-semibold text-foreground text-sm">Fleet Manager</span>
+            <span className="font-semibold text-foreground text-sm">Crownfleet</span>
           </Link>
           <div className="flex items-center gap-2">
             {isAdmin && (
